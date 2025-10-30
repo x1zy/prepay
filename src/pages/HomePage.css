@@ -1,0 +1,21 @@
+.home-page {
+  padding: 0 20px 100px 20px; 
+  background: #1b2127;
+  min-height: 100vh;
+}
+
+.listings-container {
+  max-width: 100%;
+  margin: 0 auto;
+  padding-top: 20px;
+}
+
+@media (max-width: 480px) {
+  .home-page {
+    padding: 0 16px 100px 16px;
+  }
+  
+  .listings-container {
+    padding-top: 16px;
+  }
+}

@@ -1,0 +1,165 @@
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: #212831;
+}
+
+.balance-section {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: #27333f;
+  padding: 8px 12px;
+  border-radius: 32px;
+}
+
+.balance-display {
+  display: flex;
+  align-items: center;
+
+}
+
+.balance-display:hover {
+  cursor: pointer;
+  background: #434648;
+  border-radius: 32px;
+  transition: background-color 0.2s ease;
+}
+
+.balance-icon {
+  font-size: 48px;
+}
+
+.balance-icon-img {
+  width: 16px;
+  height: 16px;
+}
+
+.balance-amount {
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  padding-left: 8px;
+}
+
+.balance-dropdown {
+  color: #94a3b8;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.balance-dropdown-img {
+  color: #94a3b8;
+  filter: invert(1) brightness(1.1);
+  width: 14px;
+  height: 14px;
+  margin-left: 8px;
+  display: inline-block;
+}
+
+.balance-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.balance-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: #2196F3;;
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+.balance-btn:hover {
+  background: #2196F3;
+}
+
+.add-btn {
+  background: #2196F3;
+}
+
+.add-btn:hover {
+  background: #1b92f2;
+}
+
+.subtract-btn {
+  background: #2196F3;
+}
+
+.subtract-btn:hover {
+  background: #1b92f2;
+}
+
+.user-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid #444;
+}
+
+.connect-wallet-btn {
+  background: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.connect-wallet-btn:hover {
+  background: #1976D2;
+}
+
+.connect-wallet-btn:active {
+  background: #1565C0;
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+  .top-bar {
+    padding: 12px 16px;
+  }
+  
+  .balance-display {
+    padding: 6px 10px;
+  }
+  
+  .balance-amount {
+    font-size: 14px;
+  }
+  
+  .balance-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
+  }
+  
+  .user-avatar {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .connect-wallet-btn {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+}
