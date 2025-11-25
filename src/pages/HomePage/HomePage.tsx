@@ -1,6 +1,6 @@
 import React from 'react';
-import type { Listing } from '../types';
-import ListingCard from '../components/ListingCard/ListingCard';
+import type { Listing } from '../../types';
+import ListingCard from '../../components/ListingCard/ListingCard';
 import './HomePage.css';
 
 interface HomePageProps {

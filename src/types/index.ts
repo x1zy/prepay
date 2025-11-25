@@ -4,7 +4,7 @@ export interface User {
   avatar: string;
   rating: number;
   reviews: number;
-  tenure: string; // e.g., "3 года", "11 мес."
+  tenure: string;
 }
 
 export interface Listing {
@@ -23,7 +23,7 @@ export interface Listing {
 export interface Balance {
   amount: number;
   currency: string;
-  symbol: string; // e.g., "💎" for diamond
+  symbol: string;
 }
 
 export interface NavigationItem {

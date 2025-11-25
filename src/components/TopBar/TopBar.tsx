@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { Balance, User } from '../../types';
 import tonSymbol from '../../assets/images/ton_symbol.svg';
 import scrollIcon from '../../assets/icons/scroll.svg';
+import usdtIcon from '../../assets/icons/tether-usdt-logo.svg';
 import './TopBar.css';
 import { TonConnectButton } from '@tonconnect/ui-react';
 
@@ -11,11 +12,21 @@ interface TopBarProps {
 }
 
 const TopBar: React.FC<TopBarProps> = ({ balance, user }) => {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [currency, setCurrency] = useState(balance.currency || 'TON');
+
+  const currentIcon = currency === 'USDT' ? usdtIcon : tonSymbol;
+
+  const toggleDropdown = () => setIsDropdownOpen(v => !v);
+  const selectCurrency = (c: 'TON' | 'USDT') => {
+    setCurrency(c);
+    setIsDropdownOpen(false);
+  };
   return (
     <div className="top-bar">
       <div className="balance-section">
-        <div className="balance-display">
-          <img src={tonSymbol} alt="TON" className="balance-icon-img" />
+        <div className="balance-display" onClick={toggleDropdown}>
+          <img src={currentIcon} alt={currency} className="balance-icon-img" />
           <span className="balance-amount">{balance.amount}</span>
           <img src={scrollIcon} alt="dropdown" className="balance-dropdown-img" />
         </div>
@@ -33,6 +44,21 @@ const TopBar: React.FC<TopBarProps> = ({ balance, user }) => {
             −
           </button>
         </div>
+        {isDropdownOpen && (
+          <div className="token-dropdown">
+            {currency === 'USDT' ? (
+              <button className="token-item" onClick={() => selectCurrency('TON')}>
+                <img src={tonSymbol} alt="TON" className="balance-icon-img" />
+                <span className="balance-amount">{balance.amount}</span>
+              </button>
+            ) : (
+              <button className="token-item" onClick={() => selectCurrency('USDT')}>
+                <img src={usdtIcon} alt="USDT" className="balance-icon-img" />
+                <span className="balance-amount">{balance.amount}</span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
       
       <div className="user-section">
