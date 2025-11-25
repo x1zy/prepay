@@ -1,5 +1,6 @@
 {
   "name": "prepay",
+  "homepage": "https://x1zy.github.io/prepay/",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -7,8 +8,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "ngrok": "ngrok http http://localhost:5173"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@ton/core": "^0.62.0",
