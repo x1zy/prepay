@@ -15,7 +15,7 @@ const CreatePage: React.FC<CreatePageProps> = ({ currentUser, onCreate }) => {
   const [price, setPrice] = useState<number | ''>('');
   const [currency, setCurrency] = useState<'TON' | 'USDT'>('TON');
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
-  const [imageUrl, setImageUrl] = useState('');
+  const [imageUrl] = useState('');
 
   const canSubmit = useMemo(() => {
     return title.trim().length > 0 && price !== '' && Number(price) >= 0;

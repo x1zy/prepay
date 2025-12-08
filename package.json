@@ -1,14 +1,15 @@
 {
   "name": "prepay",
   "homepage": "https://x1zy.github.io/prepay/",
-  "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
   },
   "dependencies": {
     "@ton/core": "^0.62.0",
@@ -16,6 +17,7 @@
     "@ton/ton": "^16.0.0",
     "@tonconnect/ui-react": "^2.3.1",
     "@vitejs/plugin-basic-ssl": "^2.1.0",
+    "gh-pages": "^6.3.0",
     "jose": "^6.1.2",
     "msw": "^2.12.3",
     "ngrok": "^5.0.0-beta.2",
