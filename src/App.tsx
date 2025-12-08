@@ -187,10 +187,10 @@ function App() {
 
   return (
     <TonConnectUIProvider
-    manifestUrl="https://grubbily-acclamatory-kai.ngrok-free.dev//tonconnect-manifest.json"
+    manifestUrl="https://x1zy.github.io/prepay/tonconnect-manifest.json"
     uiPreferences={ { theme: THEME.DARK }}
     actionsConfiguration={{
-      twaReturnUrl: 'https://grubbily-acclamatory-kai.ngrok-free.dev/return'
+      twaReturnUrl: 'https://x1zy.github.io/prepay/return'
     }}
     >
       <div className="app">
