@@ -1,4 +1,4 @@
-import type {
+import {
   Account,
   ConnectAdditionalRequest,
   SendTransactionRequest,
@@ -140,16 +140,19 @@ import type {
     }
   
     async getAccountInfo(account: Account) {
-      const response = await (
-        await fetch(`${this.host}/api/get_account_info`, {
-          headers: {
-            Authorization: `Bearer ${this.accessToken}`,
-            "Content-Type": "application/json",
-          },
-        })
-      ).json();
-  
-      return response as {};
+      const address = account.address;  // Чтение 'account' — ошибка уйдёт
+      const apiUrl = `https://tonapi.io/v2/accounts/${address}`;  // Альтернатива: https://toncenter.com/api/v2/getWalletInformation?address=${address}
+    
+      try {
+          const response = await fetch(apiUrl);
+          if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return await response.json();  // Возвращает JSON с данными аккаунта (баланс, статус и т.д.)
+      } catch (error) {
+          console.error('Error fetching account info:', error);
+          return { error: 'Failed to fetch account info' };
+      }
     }
   
     async createJetton(

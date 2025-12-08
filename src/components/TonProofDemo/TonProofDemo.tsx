@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import ReactJson from 'react-json-view';
 import './style.scss';
 import { TonProofDemoApi } from "../../TonProofDemoApi";
