@@ -119,7 +119,7 @@ const navigationItems: NavigationItem[] = [
 ];
 
 function App() {
-  const { appState, setActiveTab, addListing } = useAppState({
+  const { appState, setActiveTab, addListing, adjustBalance } = useAppState({
     balance: mockBalance,
     listings: mockListings,
     currentUser: mockUser,
@@ -133,6 +133,10 @@ function App() {
   const handlePurchase = (listingId: string) => {
     console.log('Purchasing listing:', listingId);
     // Here you would implement the purchase logic
+  };
+
+  const handleBalanceUpdate = (amount: number) => {
+    adjustBalance('add', amount);
   };
 
   const renderCurrentPage = () => {
@@ -197,6 +201,7 @@ function App() {
         <TopBar
           balance={appState.balance}
           user={appState.currentUser}
+          onBalanceUpdate={handleBalanceUpdate}
         />
         
         <main className="main-content">

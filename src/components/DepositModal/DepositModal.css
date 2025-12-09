@@ -1,0 +1,224 @@
+.deposit-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.deposit-modal {
+  background: #1a1f2e;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.deposit-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #2a3441;
+}
+
+.deposit-modal-title {
+  color: white;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.deposit-modal-close {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 32px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.deposit-modal-close:hover {
+  background: #2a3441;
+  color: white;
+}
+
+.deposit-modal-content {
+  padding: 24px;
+}
+
+.deposit-connect-wallet {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.deposit-connect-text {
+  color: #cbd5e1;
+  font-size: 16px;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.deposit-connect-button-wrapper {
+  display: flex;
+  justify-content: center;
+}
+
+.deposit-connect-button {
+  background: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 14px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.deposit-connect-button:hover {
+  background: #1976D2;
+}
+
+.deposit-form-group {
+  margin-bottom: 20px;
+}
+
+.deposit-label {
+  display: block;
+  color: #cbd5e1;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.deposit-input {
+  width: 100%;
+  background: #141a22;
+  border: 1px solid #2a3441;
+  border-radius: 12px;
+  padding: 14px 16px;
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.deposit-input:focus {
+  border-color: #2196F3;
+}
+
+.deposit-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.deposit-input::placeholder {
+  color: #6b7280;
+}
+
+.deposit-error {
+  background: #fee2e2;
+  color: #dc2626;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.deposit-info {
+  background: #141a22;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.deposit-info-text {
+  color: #94a3b8;
+  font-size: 13px;
+  margin: 0 0 8px 0;
+}
+
+.deposit-address {
+  color: #cbd5e1;
+  font-size: 12px;
+  font-family: monospace;
+  margin: 0;
+  word-break: break-all;
+}
+
+.deposit-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.deposit-cancel-btn,
+.deposit-submit-btn {
+  flex: 1;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.deposit-cancel-btn {
+  background: #2a3441;
+  color: #cbd5e1;
+}
+
+.deposit-cancel-btn:hover:not(:disabled) {
+  background: #3a4451;
+  color: white;
+}
+
+.deposit-submit-btn {
+  background: #2196F3;
+  color: white;
+}
+
+.deposit-submit-btn:hover:not(:disabled) {
+  background: #1976D2;
+}
+
+.deposit-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.deposit-cancel-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+  .deposit-modal {
+    max-width: 100%;
+    margin: 0;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .deposit-modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+}
+

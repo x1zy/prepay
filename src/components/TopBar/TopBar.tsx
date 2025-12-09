@@ -5,14 +5,17 @@ import scrollIcon from '../../assets/icons/scroll.svg';
 import usdtIcon from '../../assets/icons/tether-usdt-logo.svg';
 import './TopBar.css';
 import { TonConnectButton } from '@tonconnect/ui-react';
+import DepositModal from '../DepositModal/DepositModal';
 
 interface TopBarProps {
   balance: Balance;
   user?: User;
+  onBalanceUpdate?: (amount: number) => void;
 }
 
-const TopBar: React.FC<TopBarProps> = ({ balance, user }) => {
+const TopBar: React.FC<TopBarProps> = ({ balance, user, onBalanceUpdate }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const [currency, setCurrency] = useState(balance.currency || 'TON');
 
   const currentIcon = currency === 'USDT' ? usdtIcon : tonSymbol;
@@ -21,6 +24,10 @@ const TopBar: React.FC<TopBarProps> = ({ balance, user }) => {
   const selectCurrency = (c: 'TON' | 'USDT') => {
     setCurrency(c);
     setIsDropdownOpen(false);
+  };
+
+  const handleDepositSuccess = (amount: number) => {
+    onBalanceUpdate?.(amount);
   };
   return (
     <div className="top-bar">
@@ -34,6 +41,7 @@ const TopBar: React.FC<TopBarProps> = ({ balance, user }) => {
           <button 
             className="balance-btn add-btn"
             aria-label="Add balance"
+            onClick={() => setIsDepositModalOpen(true)}
           >
             +
           </button>
@@ -71,6 +79,12 @@ const TopBar: React.FC<TopBarProps> = ({ balance, user }) => {
         )}
         <TonConnectButton />
       </div>
+
+      <DepositModal
+        isOpen={isDepositModalOpen}
+        onClose={() => setIsDepositModalOpen(false)}
+        onSuccess={handleDepositSuccess}
+      />
     </div>
   );
 };
