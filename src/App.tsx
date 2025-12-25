@@ -14,6 +14,17 @@ import jabaImage from './assets/images/jaba.jpg';
 import './App.css';
 import OrdersPage from './pages/OrdersPage/OrdersPage';
 import { THEME, TonConnectUIProvider } from '@tonconnect/ui-react';
+import { initBicycleClient } from './services/bicycleApi';
+import { useEffect } from 'react';
+import { initTelegramWebApp, useTelegramWebApp } from './utils/telegramWebApp';
+
+// Инициализируем Bicycle клиент при загрузке приложения
+if (import.meta.env.VITE_BICYCLE_API_URL) {
+  initBicycleClient(
+    import.meta.env.VITE_BICYCLE_API_URL,
+    import.meta.env.VITE_BICYCLE_API_KEY
+  );
+}
 
 const mockListings: Listing[] = [
   {
@@ -119,10 +130,28 @@ const navigationItems: NavigationItem[] = [
 ];
 
 function App() {
+  // Инициализируем Telegram WebApp при загрузке
+  useEffect(() => {
+    initTelegramWebApp();
+  }, []);
+
+  // Получаем данные из Telegram
+  const { user: telegramUser } = useTelegramWebApp();
+  
+  // Создаем user объект из Telegram или используем mock
+  const currentUser: User = telegramUser ? {
+    id: String(telegramUser.id),
+    username: telegramUser.username || telegramUser.first_name || 'user',
+    avatar: telegramUser.photo_url || mockUser.avatar,
+    rating: mockUser.rating,
+    reviews: mockUser.reviews,
+    tenure: mockUser.tenure
+  } : mockUser;
+
   const { appState, setActiveTab, addListing, adjustBalance } = useAppState({
     balance: mockBalance,
     listings: mockListings,
-    currentUser: mockUser,
+    currentUser: currentUser,
     activeTab: 'home'
   });
 
@@ -194,7 +223,7 @@ function App() {
     manifestUrl="https://x1zy.github.io/prepay/tonconnect-manifest.json"
     uiPreferences={ { theme: THEME.DARK }}
     actionsConfiguration={{
-      twaReturnUrl: 'https://x1zy.github.io/prepay/return'
+      twaReturnUrl: 'https://t.me/PrePayOnline_bot'
     }}
     >
       <div className="app">

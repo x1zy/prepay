@@ -84,6 +84,7 @@ const TopBar: React.FC<TopBarProps> = ({ balance, user, onBalanceUpdate }) => {
         isOpen={isDepositModalOpen}
         onClose={() => setIsDepositModalOpen(false)}
         onSuccess={handleDepositSuccess}
+        user={user}
       />
     </div>
   );
