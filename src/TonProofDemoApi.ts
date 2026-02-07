@@ -73,7 +73,8 @@ import {
     private readonly accessTokenKey = "demo-api-access-token";
     private payloadTokenCache = new PayloadTokenCache();
   
-    private host = document.baseURI.replace(/\/$/, "");
+    // В production используем переменную окружения для API URL, иначе используем baseURI
+    private host = import.meta.env.VITE_API_URL || document.baseURI.replace(/\/$/, "");
   
     public accessToken: string | null = null;
   

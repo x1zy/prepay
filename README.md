@@ -4,9 +4,34 @@
 [![.Vite ](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=Vite&logoColor=white)](https://https://vite.dev/)
 [![.TypeScript ](https://shields.io/badge/TypeScript-3178C6?logo=TypeScript&logoColor=FFF&style=flat-square)](https://react.dev/)
 
-
-PrePay is a C2C service exchange using TON (The Open Network) blockchain technology. The platform allows users to post and purchase various services and goods using cryptocurrency for all transactions. The application is implemented as Telegram Mini Apps for convenient access via Telegram.
-
-## Documentation
+## 📖 Documentation
 Visit https://www.notion.so/C2C-26b669ba989280fe8fafed5405793e03 to view the full documentation.
+
+## 🚀 Deployment
+
+### Деплой на GitHub Pages
+
+**Быстрая инструкция:** См. [GITHUB_PAGES_SETUP.md](./GITHUB_PAGES_SETUP.md) для пошаговой инструкции.
+
+**Кратко:**
+1. Включите GitHub Pages в Settings → Pages → Source: GitHub Actions
+2. (Опционально) Добавьте Secrets: `VITE_BICYCLE_API_URL`, `VITE_BICYCLE_API_KEY`
+3. Сделайте push в `main` - деплой произойдет автоматически
+
+**Подробная документация:**
+- [GITHUB_PAGES_SETUP.md](./GITHUB_PAGES_SETUP.md) - Пошаговая инструкция по деплою
+- [DEPLOYMENT.md](./DEPLOYMENT.md) - Полная документация по деплою и настройке бэкенда
+
+### Быстрый старт для разработки
+
+```bash
+npm install
+npm run dev
+```
+
+### Переменные окружения
+
+- `VITE_API_URL` - URL бэкенд API сервера (для production)
+- `VITE_BICYCLE_API_URL` - URL Bicycle API сервера
+- `VITE_BICYCLE_API_KEY` - API ключ для Bicycle API
 

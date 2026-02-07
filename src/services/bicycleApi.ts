@@ -85,8 +85,18 @@ export function initBicycleClient(baseUrl: string, apiKey?: string): void {
  */
 export function getBicycleClient(): BicycleApiClient {
   if (!bicycleClient) {
-    const baseUrl = import.meta.env.VITE_BICYCLE_API_URL || 'http://localhost:8081';
+    const isProduction = import.meta.env.PROD;
+    const baseUrl = import.meta.env.VITE_BICYCLE_API_URL || 
+                    (isProduction ? '' : 'http://localhost:8081');
     const apiKey = import.meta.env.VITE_BICYCLE_API_KEY;
+    
+    if (isProduction && !import.meta.env.VITE_BICYCLE_API_URL) {
+      console.error(
+        'VITE_BICYCLE_API_URL не установлен! ' +
+        'Установите переменную окружения VITE_BICYCLE_API_URL в GitHub Secrets.'
+      );
+    }
+    
     bicycleClient = new BicycleApiClient(baseUrl, apiKey);
   }
   return bicycleClient;
@@ -100,10 +110,18 @@ class BicycleApiClient {
   private apiKey?: string;
 
   constructor(baseUrl: string, apiKey?: string) {
-    // Автоматически используем прокси для localhost в development
-    if (baseUrl.includes('localhost:8081') || baseUrl.includes('127.0.0.1:8081')) {
+    // В production всегда используем прямой URL из переменной окружения
+    // В development используем прокси через Vite для localhost
+    const isProduction = import.meta.env.PROD;
+    const isLocalhost = baseUrl.includes('localhost:8081') || 
+                       baseUrl.includes('127.0.0.1:8081') ||
+                       baseUrl.includes('payment-processor:8081');
+    
+    if (!isProduction && isLocalhost) {
+      // В development используем прокси через Vite
       this.baseUrl = '/api/bicycle';
     } else {
+      // В production всегда используем прямой URL
       this.baseUrl = baseUrl.replace(/\/$/, '');
     }
     this.apiKey = apiKey;
@@ -123,7 +141,7 @@ class BicycleApiClient {
     };
 
     if (this.apiKey) {
-      headers['Authorization'] = `Bearer ${this.apiKey}`;
+      (headers as Record<string, string>)['Authorization'] = `Bearer ${this.apiKey}`;
     }
 
     const response = await fetch(url, {
