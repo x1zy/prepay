@@ -8,7 +8,6 @@ import CreatePage from "./pages/CreatePage/CreatePage";
 import MessagesPage from "./pages/MessagesPage/MessagesPage";
 import type { ConversationPreview } from "./pages/MessagesPage/MessagesPage";
 import animeImage from "./assets/images/anime.jpg";
-import dogImage from "./assets/images/dog.jpg";
 import eyeImage from "./assets/images/eye.jpg";
 import jabaImage from "./assets/images/jaba.jpg";
 import "./App.css";
@@ -86,7 +85,6 @@ const mockListings: Listing[] = [
 const mockUser: User = {
   id: "current-user",
   username: "user123",
-  avatar: dogImage,
   rating: 0,
   reviews: 0,
   tenure: "0 дней",
@@ -193,11 +191,15 @@ function AppContent() {
       .filter(Boolean)
       .join(" ");
 
+    const username = telegramUser.username
+      ? `@${telegramUser.username}`
+      : fullName || `tg_${telegramUser.id}`;
+
     updateCurrentUser({
       ...mockUser,
       id: `telegram:${telegramUser.id}`,
-      username: telegramUser.username || fullName || `tg_${telegramUser.id}`,
-      avatar: telegramUser.photo_url || mockUser.avatar,
+      username,
+      avatar: telegramUser.photo_url,
     });
   }, [updateCurrentUser]);
 
@@ -338,6 +340,7 @@ function AppContent() {
       case "orders":
         return (
           <OrdersPage
+            username={appState.currentUser?.username ?? "user"}
             orders={appState.listings.map((l, idx) => ({
               ...l,
               orderId: `ORD-${1000 + idx}`,

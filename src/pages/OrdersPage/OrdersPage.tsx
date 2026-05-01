@@ -10,12 +10,13 @@ interface OrderItem extends Listing {
 
 interface OrdersPageProps {
   orders: OrderItem[];
+  username: string;
 }
 
-const OrdersPage: React.FC<OrdersPageProps> = ({ orders }) => {
+const OrdersPage: React.FC<OrdersPageProps> = ({ orders, username }) => {
   return (
     <div className="orders-page">
-      <h2 className="orders-title">История заказов</h2>
+      <h2 className="orders-title">Ваши заказы, {username}</h2>
       <div className="orders-list">
         {orders.map((o) => (
           <div className="order-card" key={o.orderId}>

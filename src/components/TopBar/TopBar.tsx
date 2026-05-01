@@ -78,7 +78,7 @@ const TopBar: React.FC<TopBarProps> = ({
       </div>
       
       <div className="user-section">
-        {user && (
+        {user?.avatar && (
           <img 
             src={user.avatar} 
             alt={user.username}
