@@ -1,26 +1,26 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import { nodePolyfills } from 'vite-plugin-node-polyfills';
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import { nodePolyfills } from "vite-plugin-node-polyfills";
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/prepay/',
+  base: "/prepay/",
   plugins: [
-    nodePolyfills(),
+    nodePolyfills(), // Add this as a separate plugin
     react({
       babel: {
-        plugins: [['babel-plugin-react-compiler']],
+        plugins: [], // Keep this empty or add Babel plugins here (not Vite plugins)
       },
-    })
+    }),
   ],
   server: {
     port: 5174,
     host: true,
     proxy: {
-      '/api/bicycle': {
-        target: 'http://localhost:8081',
+      "/api/bicycle": {
+        target: "http://localhost:8081",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/bicycle/, ''),
+        rewrite: (path) => path.replace(/^\/api\/bicycle/, ""),
       },
     },
     // В development режиме файлы из public доступны по корневому пути
@@ -32,9 +32,9 @@ export default defineConfig({
     middlewareMode: false,
   },
   build: {
-    outDir: 'dist',
-    assetsDir: 'assets',
+    outDir: "dist",
+    assetsDir: "assets",
   },
   // Настройка для правильной обработки статических файлов
-  publicDir: 'public',
-})
+  publicDir: "public",
+});

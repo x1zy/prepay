@@ -1,158 +1,150 @@
-import type { Listing, User, Balance, NavigationItem } from './types';
-import TopBar from './components/TopBar/TopBar';
-import BottomNavigation from './components/BottomNavigation/BottomNavigation';
-import HomePage from './pages/HomePage/HomePage';
-import SearchPage from './pages/SearchPage/SearchPage';
-import { useAppState } from './hooks/useAppState';
-import CreatePage from './pages/CreatePage/CreatePage';
-import MessagesPage from './pages/MessagesPage/MessagesPage';
-import type { ConversationPreview } from './pages/MessagesPage/MessagesPage';
-import animeImage from './assets/images/anime.jpg';
-import dogImage from './assets/images/dog.jpg';
-import eyeImage from './assets/images/eye.jpg';
-import jabaImage from './assets/images/jaba.jpg';
-import './App.css';
-import OrdersPage from './pages/OrdersPage/OrdersPage';
-import { THEME, TonConnectUIProvider } from '@tonconnect/ui-react';
-import { initBicycleClient } from './services/bicycleApi';
-import { useEffect } from 'react';
-import { initTelegramWebApp, useTelegramWebApp } from './utils/telegramWebApp';
-
-// Инициализируем Bicycle клиент при загрузке приложения
-if (import.meta.env.VITE_BICYCLE_API_URL) {
-  initBicycleClient(
-    import.meta.env.VITE_BICYCLE_API_URL,
-    import.meta.env.VITE_BICYCLE_API_KEY
-  );
-}
+import type { Listing, User, Balance, NavigationItem } from "./types";
+import TopBar from "./components/TopBar/TopBar";
+import BottomNavigation from "./components/BottomNavigation/BottomNavigation";
+import HomePage from "./pages/HomePage/HomePage";
+import SearchPage from "./pages/SearchPage/SearchPage";
+import { useAppState } from "./hooks/useAppState";
+import CreatePage from "./pages/CreatePage/CreatePage";
+import MessagesPage from "./pages/MessagesPage/MessagesPage";
+import type { ConversationPreview } from "./pages/MessagesPage/MessagesPage";
+import animeImage from "./assets/images/anime.jpg";
+import dogImage from "./assets/images/dog.jpg";
+import eyeImage from "./assets/images/eye.jpg";
+import jabaImage from "./assets/images/jaba.jpg";
+import "./App.css";
+import OrdersPage from "./pages/OrdersPage/OrdersPage";
+import { THEME, TonConnectUIProvider } from "@tonconnect/ui-react";
 
 const mockListings: Listing[] = [
   {
-    id: '1',
-    title: 'Аккаунт Spotify с регионом Нигерия ✔ Без VPN',
-    description: 'Полный доступ к Spotify Premium с регионом Нигерия',
+    id: "1",
+    title: "Аккаунт Spotify с регионом Нигерия ✔ Без VPN",
+    description: "Полный доступ к Spotify Premium с регионом Нигерия",
     price: 0.43,
-    currency: 'TON',
+    currency: "TON",
     seller: {
-      id: '1',
-      username: 'dadaenq',
+      id: "1",
+      username: "dadaenq",
       avatar: animeImage,
       rating: 35209,
       reviews: 35209,
-      tenure: '3 года'
+      tenure: "3 года",
     },
-    region: 'Нигерия',
-    features: ['Без VPN', 'Полный доступ']
+    region: "Нигерия",
+    features: ["Без VPN", "Полный доступ"],
   },
   {
-    id: '2',
-    title: 'SPOTIFY • НОВЫЙ АККАУНТ • АВТОВЫДАЧА • Швеция',
-    description: 'Новый аккаунт Spotify с автовыдачей',
+    id: "2",
+    title: "SPOTIFY • НОВЫЙ АККАУНТ • АВТОВЫДАЧА • Швеция",
+    description: "Новый аккаунт Spotify с автовыдачей",
     price: 0.72,
-    currency: 'TON',
+    currency: "TON",
     seller: {
-      id: '2',
-      username: 'f1rsoff',
+      id: "2",
+      username: "f1rsoff",
       avatar: jabaImage,
       rating: 610,
       reviews: 610,
-      tenure: '11 мес.'
+      tenure: "11 мес.",
     },
-    region: 'Швеция',
-    features: ['Новый', 'Автовыдача'],
+    region: "Швеция",
+    features: ["Новый", "Автовыдача"],
     isNew: true,
-    isAutoIssue: true
+    isAutoIssue: true,
   },
   {
-    id: '3',
-    title: 'SPOTIFY • НОВЫЙ АККАУНТ • АВТОВЫДАЧА • Канада',
-    description: 'Новый аккаунт Spotify с автовыдачей',
+    id: "3",
+    title: "SPOTIFY • НОВЫЙ АККАУНТ • АВТОВЫДАЧА • Канада",
+    description: "Новый аккаунт Spotify с автовыдачей",
     price: 0.81,
-    currency: 'TON',
+    currency: "TON",
     seller: {
-      id: '2',
-      username: 'f1rsoff',
+      id: "2",
+      username: "f1rsoff",
       avatar: eyeImage,
       rating: 610,
       reviews: 610,
-      tenure: '11 мес.'
+      tenure: "11 мес.",
     },
-    region: 'Канада',
-    features: ['Новый', 'Автовыдача'],
+    region: "Канада",
+    features: ["Новый", "Автовыдача"],
     isNew: true,
-    isAutoIssue: true
-  }
+    isAutoIssue: true,
+  },
 ];
 
 const mockUser: User = {
-  id: 'current-user',
-  username: 'user123',
+  id: "current-user",
+  username: "user123",
   avatar: dogImage,
   rating: 0,
   reviews: 0,
-  tenure: '0 дней'
+  tenure: "0 дней",
 };
 
 const mockBalance: Balance = {
   amount: 0.001,
-  currency: 'TON',
-  symbol: ''
+  currency: "TON",
+  symbol: "",
 };
 
 const mockConversations: ConversationPreview[] = [
   {
-    id: 'c1',
-    user: { id: '1', username: 'dadaenq', avatar: animeImage, rating: 35209, reviews: 35209, tenure: '3 года' },
-    lastMessage: 'Здравствуйте! Интересует подписка?',
-    time: '12:30',
-    unread: 2
+    id: "c1",
+    user: {
+      id: "1",
+      username: "dadaenq",
+      avatar: animeImage,
+      rating: 35209,
+      reviews: 35209,
+      tenure: "3 года",
+    },
+    lastMessage: "Здравствуйте! Интересует подписка?",
+    time: "12:30",
+    unread: 2,
   },
   {
-    id: 'c2',
-    user: { id: '2', username: 'f1rsoff', avatar: jabaImage, rating: 610, reviews: 610, tenure: '11 мес.' },
-    lastMessage: 'Готов выдать аккаунт сразу после оплаты',
-    time: 'Вчера'
+    id: "c2",
+    user: {
+      id: "2",
+      username: "f1rsoff",
+      avatar: jabaImage,
+      rating: 610,
+      reviews: 610,
+      tenure: "11 мес.",
+    },
+    lastMessage: "Готов выдать аккаунт сразу после оплаты",
+    time: "Вчера",
   },
   {
-    id: 'c3',
-    user: { id: '3', username: 'support', avatar: eyeImage, rating: 0, reviews: 0, tenure: '—' },
-    lastMessage: 'Напомню о правилах безопасной сделки',
-    time: '21.10'
-  }
+    id: "c3",
+    user: {
+      id: "3",
+      username: "support",
+      avatar: eyeImage,
+      rating: 0,
+      reviews: 0,
+      tenure: "—",
+    },
+    lastMessage: "Напомню о правилах безопасной сделки",
+    time: "21.10",
+  },
 ];
 
 const navigationItems: NavigationItem[] = [
-  { id: 'home', label: 'Главная', icon: 'home', path: '/' },
-  { id: 'search', label: 'Поиск', icon: 'search', path: '/search' },
-  { id: 'create', label: 'Создать', icon: 'create', path: '/create' },
-  { id: 'messages', label: 'Сообщения', icon: 'messages', path: '/messages' },
-  { id: 'orders', label: 'Заказы', icon: 'profile', path: '/orders' }
+  { id: "home", label: "Главная", icon: "home", path: "/" },
+  { id: "search", label: "Поиск", icon: "search", path: "/search" },
+  { id: "create", label: "Создать", icon: "create", path: "/create" },
+  { id: "messages", label: "Сообщения", icon: "messages", path: "/messages" },
+  { id: "orders", label: "Заказы", icon: "profile", path: "/orders" },
 ];
 
 function App() {
-  // Инициализируем Telegram WebApp при загрузке
-  useEffect(() => {
-    initTelegramWebApp();
-  }, []);
-
-  // Получаем данные из Telegram
-  const { user: telegramUser } = useTelegramWebApp();
-  
-  // Создаем user объект из Telegram или используем mock
-  const currentUser: User = telegramUser ? {
-    id: String(telegramUser.id),
-    username: telegramUser.username || telegramUser.first_name || 'user',
-    avatar: telegramUser.photo_url || mockUser.avatar,
-    rating: mockUser.rating,
-    reviews: mockUser.reviews,
-    tenure: mockUser.tenure
-  } : mockUser;
-
   const { appState, setActiveTab, addListing, adjustBalance } = useAppState({
     balance: mockBalance,
     listings: mockListings,
-    currentUser: currentUser,
-    activeTab: 'home'
+    currentUser: mockUser,
+    activeTab: "home",
   });
 
   const handleTabChange = (tabId: string) => {
@@ -160,71 +152,72 @@ function App() {
   };
 
   const handlePurchase = (listingId: string) => {
-    console.log('Purchasing listing:', listingId);
+    console.log("Purchasing listing:", listingId);
     // Here you would implement the purchase logic
   };
 
   const handleBalanceUpdate = (amount: number) => {
-    adjustBalance('add', amount);
+    adjustBalance("add", amount);
   };
 
   const renderCurrentPage = () => {
     switch (appState.activeTab) {
-      case 'home':
+      case "home":
         return (
-          <HomePage 
-            listings={appState.listings}
-            onPurchase={handlePurchase}
-          />
+          <HomePage listings={appState.listings} onPurchase={handlePurchase} />
         );
-      case 'search':
+      case "search":
         return (
           <SearchPage
             listings={appState.listings}
             onPurchase={handlePurchase}
           />
         );
-      case 'create':
+      case "create":
         return (
           <CreatePage
             currentUser={appState.currentUser}
-            onCreate={(listing) => { addListing(listing); setActiveTab('home'); }}
+            onCreate={(listing) => {
+              addListing(listing);
+              setActiveTab("home");
+            }}
           />
         );
-      case 'messages':
+      case "messages":
         return (
           <MessagesPage
             conversations={mockConversations}
-            onOpenConversation={(id) => console.log('open conversation', id)}
+            onOpenConversation={(id) => console.log("open conversation", id)}
           />
         );
-      case 'orders':
+      case "orders":
         return (
           <OrdersPage
             orders={appState.listings.map((l, idx) => ({
               ...l,
               orderId: `ORD-${1000 + idx}`,
-              createdAt: 'Сегодня',
-              status: idx % 3 === 0 ? 'Оплачен' : idx % 3 === 1 ? 'В обработке' : 'Отменён'
+              createdAt: "Сегодня",
+              status:
+                idx % 3 === 0
+                  ? "Оплачен"
+                  : idx % 3 === 1
+                    ? "В обработке"
+                    : "Отменён",
             }))}
           />
         );
       default:
-        return (
-          <div className="coming-soon">
-            
-          </div>
-        );
+        return <div className="coming-soon"></div>;
     }
   };
 
   return (
     <TonConnectUIProvider
-    manifestUrl="https://x1zy.github.io/prepay/tonconnect-manifest.json"
-    uiPreferences={ { theme: THEME.DARK }}
-    actionsConfiguration={{
-      twaReturnUrl: 'https://t.me/PrePayOnline_bot'
-    }}
+      manifestUrl="https://x1zy.github.io/prepay/tonconnect-manifest.json"
+      uiPreferences={{ theme: THEME.DARK }}
+      actionsConfiguration={{
+        twaReturnUrl: "https://x1zy.github.io/prepay/return",
+      }}
     >
       <div className="app">
         <TopBar
@@ -232,11 +225,9 @@ function App() {
           user={appState.currentUser}
           onBalanceUpdate={handleBalanceUpdate}
         />
-        
-        <main className="main-content">
-          {renderCurrentPage()}
-        </main>
-        
+
+        <main className="main-content">{renderCurrentPage()}</main>
+
         <BottomNavigation
           items={navigationItems}
           activeTab={appState.activeTab}
@@ -244,7 +235,6 @@ function App() {
         />
       </div>
     </TonConnectUIProvider>
-    
   );
 }
 

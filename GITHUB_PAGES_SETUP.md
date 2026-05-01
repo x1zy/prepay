@@ -143,3 +143,4 @@ npm run deploy
 - [ ] Workflow успешно выполнился
 - [ ] Приложение доступно по адресу `https://x1zy.github.io/prepay/`
 
+

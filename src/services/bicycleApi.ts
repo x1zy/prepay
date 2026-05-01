@@ -1,6 +1,6 @@
 /**
  * Bicycle API Client
- * 
+ *
  * Документация: https://gobicycle.github.io/bicycle/
  */
 
@@ -51,7 +51,7 @@ export interface BicycleWithdrawalResponse {
 }
 
 export interface BicycleWithdrawalStatusResponse {
-  status: 'pending' | 'processing' | 'processed' | 'failed';
+  status: "pending" | "processing" | "processed" | "failed";
   tx_hash?: string;
   user_id?: string;
   query_id?: string;
@@ -62,7 +62,7 @@ export interface BicycleBalanceResponse {
   currency: string;
   total_processing_amount?: string;
   total_pending_amount?: string;
-  status?: 'active' | 'uninit' | 'frozen' | 'non_exist';
+  status?: "active" | "uninit" | "frozen" | "non_exist";
 }
 
 export interface BicycleSystemSyncResponse {
@@ -85,18 +85,9 @@ export function initBicycleClient(baseUrl: string, apiKey?: string): void {
  */
 export function getBicycleClient(): BicycleApiClient {
   if (!bicycleClient) {
-    const isProduction = import.meta.env.PROD;
-    const baseUrl = import.meta.env.VITE_BICYCLE_API_URL || 
-                    (isProduction ? '' : 'http://localhost:8081');
+    const baseUrl =
+      import.meta.env.VITE_BICYCLE_API_URL || "http://localhost:8081";
     const apiKey = import.meta.env.VITE_BICYCLE_API_KEY;
-    
-    if (isProduction && !import.meta.env.VITE_BICYCLE_API_URL) {
-      console.error(
-        'VITE_BICYCLE_API_URL не установлен! ' +
-        'Установите переменную окружения VITE_BICYCLE_API_URL в GitHub Secrets.'
-      );
-    }
-    
     bicycleClient = new BicycleApiClient(baseUrl, apiKey);
   }
   return bicycleClient;
@@ -110,19 +101,14 @@ class BicycleApiClient {
   private apiKey?: string;
 
   constructor(baseUrl: string, apiKey?: string) {
-    // В production всегда используем прямой URL из переменной окружения
-    // В development используем прокси через Vite для localhost
-    const isProduction = import.meta.env.PROD;
-    const isLocalhost = baseUrl.includes('localhost:8081') || 
-                       baseUrl.includes('127.0.0.1:8081') ||
-                       baseUrl.includes('payment-processor:8081');
-    
-    if (!isProduction && isLocalhost) {
-      // В development используем прокси через Vite
-      this.baseUrl = '/api/bicycle';
+    // Автоматически используем прокси для localhost в development
+    if (
+      baseUrl.includes("localhost:8081") ||
+      baseUrl.includes("127.0.0.1:8081")
+    ) {
+      this.baseUrl = "/api/bicycle";
     } else {
-      // В production всегда используем прямой URL
-      this.baseUrl = baseUrl.replace(/\/$/, '');
+      this.baseUrl = baseUrl.replace(/\/$/, "");
     }
     this.apiKey = apiKey;
   }
@@ -132,16 +118,17 @@ class BicycleApiClient {
    */
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     const headers: HeadersInit = {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...options.headers,
     };
 
     if (this.apiKey) {
-      (headers as Record<string, string>)['Authorization'] = `Bearer ${this.apiKey}`;
+      (headers as Record<string, string>)["Authorization"] =
+        `Bearer ${this.apiKey}`;
     }
 
     const response = await fetch(url, {
@@ -152,7 +139,7 @@ class BicycleApiClient {
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(
-        `Bicycle API error: ${response.status} ${response.statusText} - ${errorText}`
+        `Bicycle API error: ${response.status} ${response.statusText} - ${errorText}`,
       );
     }
 
@@ -164,15 +151,15 @@ class BicycleApiClient {
    * Создает новый адрес для депозита
    */
   async createNewAddress(
-    currency: string = 'TON',
-    userId?: string
+    currency: string = "TON",
+    userId?: string,
   ): Promise<BicycleNewAddressResponse> {
     const body: BicycleNewAddressRequest = { currency };
     if (userId) {
       body.user_id = userId;
     }
-    return this.request<BicycleNewAddressResponse>('/v1/address/new', {
-      method: 'POST',
+    return this.request<BicycleNewAddressResponse>("/v1/address/new", {
+      method: "POST",
       body: JSON.stringify(body),
     });
   }
@@ -185,7 +172,7 @@ class BicycleApiClient {
     const params = new URLSearchParams({ user_id: userId });
     return this.request<BicycleNewAddressResponse[]>(
       `/v1/address/all?${params.toString()}`,
-      { method: 'GET' }
+      { method: "GET" },
     );
   }
 
@@ -195,10 +182,10 @@ class BicycleApiClient {
    */
   async getDepositHistory(
     userId: string,
-    currency: string = 'TON',
+    currency: string = "TON",
     limit: number = 100,
     offset: number = 0,
-    sortOrder: 'asc' | 'desc' = 'desc'
+    sortOrder: "asc" | "desc" = "desc",
   ): Promise<BicycleDepositHistoryResponse> {
     const params = new URLSearchParams({
       user_id: userId,
@@ -209,7 +196,7 @@ class BicycleApiClient {
     });
     return this.request<BicycleDepositHistoryResponse>(
       `/v1/deposit/history?${params.toString()}`,
-      { method: 'GET' }
+      { method: "GET" },
     );
   }
 
@@ -218,12 +205,12 @@ class BicycleApiClient {
    * Получает информацию о депозите по хешу транзакции
    */
   async getDepositIncomeByTxHash(
-    txHash: string
+    txHash: string,
   ): Promise<BicycleDepositIncomeByTxHashResponse> {
     const params = new URLSearchParams({ tx_hash: txHash });
     return this.request<BicycleDepositIncomeByTxHashResponse>(
       `/v1/deposit/income?${params.toString()}`,
-      { method: 'GET' }
+      { method: "GET" },
     );
   }
 
@@ -232,10 +219,10 @@ class BicycleApiClient {
    * Отправляет запрос на вывод средств
    */
   async sendWithdrawal(
-    request: BicycleWithdrawalRequest
+    request: BicycleWithdrawalRequest,
   ): Promise<BicycleWithdrawalResponse> {
-    return this.request<BicycleWithdrawalResponse>('/v1/withdrawal/send', {
-      method: 'POST',
+    return this.request<BicycleWithdrawalResponse>("/v1/withdrawal/send", {
+      method: "POST",
       body: JSON.stringify(request),
     });
   }
@@ -245,12 +232,12 @@ class BicycleApiClient {
    * Получает статус вывода средств
    */
   async getWithdrawalStatus(
-    id: number
+    id: number,
   ): Promise<BicycleWithdrawalStatusResponse> {
     const params = new URLSearchParams({ id: id.toString() });
     return this.request<BicycleWithdrawalStatusResponse>(
       `/v1/withdrawal/status?${params.toString()}`,
-      { method: 'GET' }
+      { method: "GET" },
     );
   }
 
@@ -259,16 +246,16 @@ class BicycleApiClient {
    * Получает баланс
    */
   async getBalance(
-    currency: string = 'TON',
-    address?: string
+    currency: string = "TON",
+    address?: string,
   ): Promise<BicycleBalanceResponse> {
     const params = new URLSearchParams({ currency });
     if (address) {
-      params.append('address', address);
+      params.append("address", address);
     }
     return this.request<BicycleBalanceResponse>(
       `/v1/balance?${params.toString()}`,
-      { method: 'GET' }
+      { method: "GET" },
     );
   }
 
@@ -277,9 +264,8 @@ class BicycleApiClient {
    * Получает статус синхронизации
    */
   async getSystemSync(): Promise<BicycleSystemSyncResponse> {
-    return this.request<BicycleSystemSyncResponse>('/v1/system/sync', {
-      method: 'GET',
+    return this.request<BicycleSystemSyncResponse>("/v1/system/sync", {
+      method: "GET",
     });
   }
 }
-
