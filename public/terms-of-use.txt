@@ -1,2 +1,121 @@
-Terms of use example
-...
+Terms of Use
+
+Last updated: May 1, 2026
+
+These Terms of Use ("Terms") govern your access to and use of Prepay ("the App"),
+including the Telegram Mini App, website, TON Connect integration, deposit
+features, withdrawal features, listings, orders, and related services.
+
+By using the App, you agree to these Terms. If you do not agree, do not use the
+App.
+
+1. Eligibility
+
+You may use the App only if you are legally allowed to do so under the laws of
+your country or region. You are responsible for complying with all applicable
+laws, including laws related to digital assets, taxes, payments, sanctions, and
+online commerce.
+
+2. Account and Telegram Mini App
+
+The App may identify you by your Telegram account data, including your Telegram
+user ID and username. You are responsible for keeping your Telegram account
+secure. Actions made through your Telegram account may be treated as actions
+made by you.
+
+3. Wallet Connection
+
+The App may allow you to connect a TON wallet through TON Connect. You are
+responsible for verifying all transaction details before signing any transaction.
+
+We never ask for your seed phrase, private key, or recovery phrase. If anyone
+asks for this information, do not provide it.
+
+4. Deposits
+
+The App may generate a unique deposit address for your user account. Deposits
+must be sent only to the address shown in the App. Sending funds to an incorrect
+address, wrong network, unsupported currency, or outdated address may result in
+permanent loss.
+
+Balances may update after blockchain confirmation and payment processor
+processing. Confirmation times can vary. The App may delay or reject deposits
+that appear suspicious, duplicated, invalid, or unsupported.
+
+5. Withdrawals
+
+If withdrawals are available, you are responsible for entering the correct
+destination address and amount. Blockchain withdrawals may be irreversible once
+broadcast. Fees, minimums, limits, manual review, or processing delays may apply.
+
+6. Orders and Listings
+
+The App may display listings, products, services, or orders. You are responsible
+for reviewing listing details before purchasing. We may remove, hide, suspend,
+or reject content, listings, orders, or accounts that violate these Terms or
+create risk for users or the App.
+
+7. Prohibited Use
+
+You agree not to use the App to:
+
+- violate any law, regulation, sanction, or third-party right;
+- commit fraud, money laundering, abuse, spam, phishing, or other harmful acts;
+- interfere with the App, payment processor, Telegram, TON Connect, or blockchain
+  infrastructure;
+- attempt to bypass security, limits, authentication, or payment checks;
+- upload or sell illegal, harmful, stolen, counterfeit, or unauthorized goods or
+  services;
+- impersonate another person or provide false information.
+
+8. Blockchain Risk
+
+Digital asset transactions involve risk. Transactions may be irreversible,
+volatile, delayed, or affected by network fees, wallet issues, smart contract
+bugs, third-party services, or blockchain outages. You use blockchain features at
+your own risk.
+
+9. No Financial Advice
+
+The App does not provide financial, investment, legal, tax, or accounting advice.
+Any digital asset activity is your own decision and responsibility.
+
+10. Service Availability
+
+We may update, pause, limit, suspend, or discontinue any part of the App at any
+time. We do not guarantee uninterrupted availability, error-free operation, or
+compatibility with every device, wallet, browser, or Telegram client.
+
+11. Fees
+
+Blockchain network fees, wallet fees, payment processor fees, or service fees
+may apply. Fees may change over time and may be deducted from deposits,
+withdrawals, balances, or payments where applicable.
+
+12. Limitation of Liability
+
+To the maximum extent permitted by law, the App is provided "as is" and "as
+available". We are not liable for indirect, incidental, special, consequential,
+or punitive damages, or for losses related to incorrect addresses, user mistakes,
+wallet compromise, blockchain failures, third-party services, downtime, or
+unauthorized account access.
+
+13. Termination
+
+We may restrict, suspend, or terminate access to the App if we believe you have
+violated these Terms, created risk, used the App unlawfully, or harmed other
+users or the service.
+
+14. Changes to These Terms
+
+We may update these Terms from time to time. The updated version will be posted
+at the same public URL with a new "Last updated" date. Continued use of the App
+after changes means you accept the updated Terms.
+
+15. Contact
+
+If you have questions about these Terms, contact the project owner or support
+channel listed in the App.
+
+This document is a general template and should be reviewed by a qualified legal
+professional before production use.
