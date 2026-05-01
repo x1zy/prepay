@@ -45,14 +45,40 @@ app.post("/api/deposit/address", async (req, res) => {
 
     const data = await response.json();
 
-    if (!response.ok) {
-      return res.status(response.status).json(data);
-    }
-
-    res.json(data);
+    return res.status(response.status).json(data);
   } catch (error) {
     console.error("Deposit address error:", error);
-    res.status(500).json({ error: "Failed to create deposit address" });
+    return res.status(500).json({ error: "Failed to create deposit address" });
+  }
+});
+
+app.use("/api/bicycle", async (req, res) => {
+  try {
+    const bicyclePath = req.originalUrl.replace(/^\/api\/bicycle/, "");
+    const targetUrl = `${BICYCLE_URL}${bicyclePath}`;
+
+    const response = await fetch(targetUrl, {
+      method: req.method,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${BICYCLE_TOKEN}`,
+      },
+      body: ["GET", "HEAD"].includes(req.method)
+        ? undefined
+        : JSON.stringify(req.body),
+    });
+
+    const contentType = response.headers.get("content-type");
+    const responseBody = await response.text();
+
+    if (contentType) {
+      res.setHeader("content-type", contentType);
+    }
+
+    return res.status(response.status).send(responseBody);
+  } catch (error) {
+    console.error("Bicycle proxy error:", error);
+    return res.status(500).json({ error: "Bicycle proxy request failed" });
   }
 });
 
