@@ -13,6 +13,11 @@ export interface BicycleNewAddressRequest {
 export interface BicycleNewAddressResponse {
   address: string;
   user_id?: string;
+  currency?: string;
+}
+
+interface BicycleAllAddressesResponse {
+  addresses?: BicycleNewAddressResponse[];
 }
 
 export interface BicycleDepositIncome {
@@ -170,10 +175,11 @@ class BicycleApiClient {
    */
   async getAllAddresses(userId: string): Promise<BicycleNewAddressResponse[]> {
     const params = new URLSearchParams({ user_id: userId });
-    return this.request<BicycleNewAddressResponse[]>(
-      `/v1/address/all?${params.toString()}`,
-      { method: "GET" },
-    );
+    const response = await this.request<
+      BicycleNewAddressResponse[] | BicycleAllAddressesResponse
+    >(`/v1/address/all?${params.toString()}`, { method: "GET" });
+
+    return Array.isArray(response) ? response : (response.addresses ?? []);
   }
 
   /**

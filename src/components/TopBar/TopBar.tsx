@@ -10,10 +10,18 @@ import DepositModal from '../DepositModal/DepositModal';
 interface TopBarProps {
   balance: Balance;
   user?: User;
+  depositAddress?: string | null;
+  isDepositAddressLoading?: boolean;
   onBalanceUpdate?: (amount: number) => void;
 }
 
-const TopBar: React.FC<TopBarProps> = ({ balance, user, onBalanceUpdate }) => {
+const TopBar: React.FC<TopBarProps> = ({
+  balance,
+  user,
+  depositAddress,
+  isDepositAddressLoading = false,
+  onBalanceUpdate,
+}) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const [currency, setCurrency] = useState(balance.currency || 'TON');
@@ -83,6 +91,8 @@ const TopBar: React.FC<TopBarProps> = ({ balance, user, onBalanceUpdate }) => {
       <DepositModal
         isOpen={isDepositModalOpen}
         onClose={() => setIsDepositModalOpen(false)}
+        depositAddress={depositAddress}
+        isDepositAddressLoading={isDepositAddressLoading}
         onSuccess={handleDepositSuccess}
       />
     </div>

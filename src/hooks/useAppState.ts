@@ -30,6 +30,13 @@ export const useAppState = (initialState: AppState) => {
     }));
   }, []);
 
+  const updateCurrentUser = useCallback((currentUser: AppState['currentUser']) => {
+    setAppState(prev => ({
+      ...prev,
+      currentUser
+    }));
+  }, []);
+
   const setActiveTab = useCallback((tabId: string) => {
     setAppState(prev => ({
       ...prev,
@@ -56,6 +63,7 @@ export const useAppState = (initialState: AppState) => {
     updateBalance,
     adjustBalance,
     updateListings,
+    updateCurrentUser,
     setActiveTab,
     addListing,
     removeListing
