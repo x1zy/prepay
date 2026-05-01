@@ -1,2 +1,109 @@
-Privacy Policy example
-...
+Privacy Policy
+
+Last updated: May 1, 2026
+
+This Privacy Policy explains how Prepay ("we", "our", or "the App") collects,
+uses, and protects information when you use our Telegram Mini App, website, TON
+Connect integration, and payment features.
+
+1. Information We Collect
+
+When you use the App, we may process the following information:
+
+- Telegram account information provided by Telegram Mini Apps, such as your
+  Telegram user ID, username, first name, last name, and profile photo URL.
+- TON wallet information provided through TON Connect, such as your connected
+  wallet address and public wallet metadata.
+- Payment information related to deposits and withdrawals, including deposit
+  addresses, transaction hashes, payment amounts, timestamps, currency, and
+  payment status.
+- Technical information such as browser type, device information, IP address,
+  request logs, and error logs needed to operate and secure the App.
+
+We do not collect your private keys, seed phrases, wallet recovery phrases, or
+Telegram password. You should never share this information with anyone.
+
+2. How We Use Information
+
+We use the information described above to:
+
+- identify your account inside the App;
+- display your Telegram profile photo and username;
+- connect your Telegram user ID to your deposit address;
+- process TON deposits and withdrawals;
+- show your balance, order history, and payment status;
+- prevent fraud, duplicate payments, abuse, and unauthorized access;
+- troubleshoot errors and improve the reliability of the App;
+- comply with legal, tax, accounting, or regulatory requirements when they apply.
+
+3. Telegram Mini Apps
+
+The App may use Telegram Mini Apps data made available by Telegram. Telegram is
+responsible for its own processing of your Telegram account data. You can review
+Telegram's privacy practices in Telegram's official Privacy Policy.
+
+4. TON Connect and Blockchain Data
+
+When you connect a TON wallet, your wallet address and transaction activity may
+be visible on the TON blockchain. Blockchain transactions are public and may be
+permanent. We cannot delete or modify blockchain records.
+
+The App never receives your private key or seed phrase. Transaction signing is
+handled by your wallet provider through TON Connect.
+
+5. Payments and Bicycle Payment Processor
+
+The App may use a Bicycle-based payment processor to create deposit addresses,
+track incoming deposits, and process withdrawals. Payment processor data may
+include your internal user ID, deposit address, transaction hash, amount, and
+payment status.
+
+6. Sharing of Information
+
+We do not sell your personal information. We may share limited information with:
+
+- infrastructure providers needed to host and operate the App;
+- payment-processing services used to detect and confirm blockchain payments;
+- wallet and blockchain services used by your connected wallet;
+- authorities or third parties when required by law or needed to protect rights,
+  users, security, or the integrity of the App.
+
+7. Data Retention
+
+We keep information only for as long as reasonably necessary to operate the App,
+maintain account balances and order history, prevent fraud, resolve disputes,
+and meet legal or accounting obligations.
+
+Blockchain data may remain publicly available indefinitely because it is stored
+on decentralized networks outside our control.
+
+8. Security
+
+We use reasonable technical and organizational measures to protect information.
+However, no online service can guarantee absolute security. You are responsible
+for securing your Telegram account, wallet, devices, passwords, and recovery
+phrases.
+
+9. Your Choices
+
+You may stop using the App at any time. You may disconnect your wallet through
+TON Connect or your wallet application. You may also contact us to request
+access, correction, or deletion of information where applicable.
+
+Some information may need to be retained for security, accounting, fraud
+prevention, legal compliance, or because it exists on a public blockchain.
+
+10. Children's Privacy
+
+The App is not intended for children under the age required by applicable law.
+If you believe a child has provided information to us, please contact us.
+
+11. Changes to This Policy
+
+We may update this Privacy Policy from time to time. The updated version will be
+posted at the same public URL with a new "Last updated" date.
+
+12. Contact
+
+If you have questions about this Privacy Policy, contact the project owner or
+support channel listed in the App.
