@@ -90,8 +90,10 @@ export function initBicycleClient(baseUrl: string, apiKey?: string): void {
  */
 export function getBicycleClient(): BicycleApiClient {
   if (!bicycleClient) {
+    const apiUrl = import.meta.env.VITE_API_URL;
     const baseUrl =
-      import.meta.env.VITE_BICYCLE_API_URL || "http://localhost:8081";
+      import.meta.env.VITE_BICYCLE_API_URL ||
+      (apiUrl ? `${apiUrl.replace(/\/$/, "")}/api/bicycle` : "/api/bicycle");
     const apiKey = import.meta.env.VITE_BICYCLE_API_KEY;
     bicycleClient = new BicycleApiClient(baseUrl, apiKey);
   }
@@ -128,6 +130,7 @@ class BicycleApiClient {
     const url = `${this.baseUrl}${endpoint}`;
     const headers: HeadersInit = {
       "Content-Type": "application/json",
+      "ngrok-skip-browser-warning": "true",
       ...options.headers,
     };
 
