@@ -107,3 +107,6 @@ posted at the same public URL with a new "Last updated" date.
 
 If you have questions about this Privacy Policy, contact the project owner or
 support channel listed in the App.
+
+This document is a general template and should be reviewed by a qualified legal
+professional before production use.

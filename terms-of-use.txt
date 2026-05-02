@@ -116,3 +116,6 @@ after changes means you accept the updated Terms.
 
 If you have questions about these Terms, contact the project owner or support
 channel listed in the App.
+
+This document is a general template and should be reviewed by a qualified legal
+professional before production use.
