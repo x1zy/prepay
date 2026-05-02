@@ -50,6 +50,23 @@ export interface Withdrawal {
   updated_at: string;
 }
 
+export interface ApiOrder {
+  id: string;
+  orderId: string;
+  listingId: string | null;
+  title: string;
+  description: string;
+  price: number;
+  currency: string;
+  features: string[];
+  status: "paid" | "pending" | "canceled";
+  createdAt: string;
+  seller: {
+    id: string;
+    username: string;
+  };
+}
+
 const getApiUrl = (): string => {
   const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -115,5 +132,52 @@ export const prepayApi = {
   getWithdrawalStatus(withdrawalId: string): Promise<Withdrawal> {
     const params = new URLSearchParams({ id: withdrawalId });
     return request<Withdrawal>(`/api/withdrawals/status?${params.toString()}`);
+  },
+
+  upsertUser(payload: {
+    id: string;
+    telegram_id?: number | null;
+    username: string;
+    avatar?: string;
+  }) {
+    return request("/api/users", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getListings() {
+    return request<{ listings: import("../types").Listing[] }>("/api/listings");
+  },
+
+  createListing(payload: {
+    seller_id: string;
+    seller: import("../types").User;
+    title: string;
+    description: string;
+    price: number;
+    currency: string;
+    features: string[];
+  }) {
+    return request<import("../types").Listing>("/api/listings", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  createOrder(payload: {
+    buyer_id: string;
+    buyer: import("../types").User;
+    listing_id: string;
+  }) {
+    return request<ApiOrder>("/api/orders", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getOrders(userId: string) {
+    const params = new URLSearchParams({ user_id: userId });
+    return request<{ orders: ApiOrder[] }>(`/api/orders?${params.toString()}`);
   },
 };

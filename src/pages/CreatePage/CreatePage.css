@@ -84,6 +84,14 @@
   margin-top: 8px;
 }
 
+.form-error {
+  background: #3a1f24;
+  color: #f87171;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
 .submit-btn {
   width: 100%;
   background: #2196F3;

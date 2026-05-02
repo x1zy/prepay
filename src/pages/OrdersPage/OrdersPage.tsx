@@ -1,15 +1,24 @@
-import React from 'react';
-import type { Listing } from '../../types';
-import './OrdersPage.css';
+import React from "react";
+import type { ApiOrder } from "../../services/prepayApi";
+import "./OrdersPage.css";
 
-interface OrderItem extends Listing {
+type DisplayOrder = Partial<Omit<ApiOrder, "seller" | "status">> & {
+  id?: string;
   orderId: string;
+  title: string;
+  price: number;
+  currency: string;
+  features?: string[];
   createdAt: string;
-  status: 'Оплачен' | 'В обработке' | 'Отменён';
-}
+  status: ApiOrder["status"] | string;
+  seller?: {
+    id?: string;
+    username: string;
+  };
+};
 
 interface OrdersPageProps {
-  orders: OrderItem[];
+  orders: DisplayOrder[];
   username: string;
 }
 
@@ -18,25 +27,34 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ orders, username }) => {
     <div className="orders-page">
       <h2 className="orders-title">Ваши заказы, {username}</h2>
       <div className="orders-list">
-        {orders.map((o) => (
-          <div className="order-card" key={o.orderId}>
+        {orders.map((order) => (
+          <div className="order-card" key={order.id ?? order.orderId}>
             <div className="order-main">
               <div className="order-header">
-                <span className="order-title">{o.title}</span>
-                <span className={`order-status ${statusToClass(o.status)}`}>{o.status}</span>
+                <span className="order-title">{order.title}</span>
+                <span className={`order-status ${statusToClass(order.status)}`}>
+                  {statusToLabel(order.status)}
+                </span>
               </div>
               <div className="order-meta">
-                <span className="order-id">#{o.orderId}</span>
-                <span className="order-date">{o.createdAt}</span>
+                <span className="order-id">#{order.orderId.slice(0, 8)}</span>
+                <span className="order-date">
+                  {new Date(order.createdAt).toLocaleDateString("ru-RU")}
+                </span>
+              </div>
+              <div className="order-meta">
+                <span>Продавец: {order.seller?.username ?? "не указан"}</span>
               </div>
               <div className="order-price">
-                <span className="amount">{o.price}</span>
-                <span className="currency">{o.currency}</span>
+                <span className="amount">{order.price}</span>
+                <span className="currency">{order.currency}</span>
               </div>
-              {o.features && o.features.length > 0 && (
+              {(order.features?.length ?? 0) > 0 && (
                 <div className="order-tags">
-                  {o.features.slice(0, 3).map((f, i) => (
-                    <span className="tag" key={i}>{f}</span>
+                  {order.features?.slice(0, 3).map((feature) => (
+                    <span className="tag" key={feature}>
+                      {feature}
+                    </span>
                   ))}
                 </div>
               )}
@@ -51,19 +69,30 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ orders, username }) => {
   );
 };
 
-function statusToClass(s: OrderItem['status']): string {
-  switch (s) {
-    case 'Оплачен':
-      return 'paid';
-    case 'В обработке':
-      return 'pending';
-    case 'Отменён':
-      return 'canceled';
+function statusToLabel(status: ApiOrder["status"] | string): string {
+  switch (status) {
+    case "paid":
+      return "Оплачен";
+    case "pending":
+      return "В обработке";
+    case "canceled":
+      return "Отменен";
     default:
-      return '';
+      return status;
+  }
+}
+
+function statusToClass(status: ApiOrder["status"] | string): string {
+  switch (status) {
+    case "paid":
+      return "paid";
+    case "pending":
+      return "pending";
+    case "canceled":
+      return "canceled";
+    default:
+      return "";
   }
 }
 
 export default OrdersPage;
-
-

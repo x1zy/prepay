@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import { initializeDatabase, pool, requireDatabase } from "./db.js";
 
 const app = express();
 
@@ -42,6 +43,239 @@ app.use("/api", (req, res, next) => {
 
 app.get("/api/health", (req, res) => {
   res.json({ ok: true });
+});
+
+app.post("/api/users", requireDatabase, async (req, res) => {
+  try {
+    const user = await upsertUser(req.body);
+    return res.status(201).json(user);
+  } catch (error) {
+    console.error("Upsert user error:", error);
+    return res.status(400).json({ error: error.message });
+  }
+});
+
+app.get("/api/listings", requireDatabase, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        l.*,
+        u.username AS seller_username,
+        u.avatar AS seller_avatar,
+        u.rating AS seller_rating,
+        u.reviews AS seller_reviews,
+        u.tenure AS seller_tenure
+      FROM listings l
+      JOIN users u ON u.id = l.seller_id
+      WHERE l.status = 'active'
+      ORDER BY l.created_at DESC;
+    `);
+
+    return res.json({ listings: result.rows.map(mapListing) });
+  } catch (error) {
+    console.error("Load listings error:", error);
+    return res.status(500).json({ error: "Failed to load listings" });
+  }
+});
+
+app.post("/api/listings", requireDatabase, async (req, res) => {
+  try {
+    const {
+      seller_id,
+      seller,
+      title,
+      description,
+      price,
+      currency = "TON",
+      region,
+      features = [],
+      isNew = false,
+      isAutoIssue = false,
+    } = req.body;
+    const sellerId = String(seller_id ?? seller?.id ?? "").trim();
+    const trimmedTitle = String(title ?? "").trim();
+    const numericPrice = Number(price);
+
+    if (!sellerId) {
+      return res.status(400).json({ error: "seller_id is required" });
+    }
+
+    if (!trimmedTitle) {
+      return res.status(400).json({ error: "title is required" });
+    }
+
+    if (!Number.isFinite(numericPrice) || numericPrice < 0) {
+      return res.status(400).json({ error: "price must be zero or greater" });
+    }
+
+    await upsertUser({
+      id: sellerId,
+      username: seller?.username ?? sellerId,
+      avatar: seller?.avatar,
+    });
+
+    const listingId = crypto.randomUUID();
+    const result = await pool.query(
+      `
+        INSERT INTO listings (
+          id,
+          seller_id,
+          title,
+          description,
+          price,
+          currency,
+          region,
+          features,
+          is_new,
+          is_auto_issue
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, $10)
+        RETURNING
+          listings.*,
+          (SELECT username FROM users WHERE id = seller_id) AS seller_username,
+          (SELECT avatar FROM users WHERE id = seller_id) AS seller_avatar,
+          (SELECT rating FROM users WHERE id = seller_id) AS seller_rating,
+          (SELECT reviews FROM users WHERE id = seller_id) AS seller_reviews,
+          (SELECT tenure FROM users WHERE id = seller_id) AS seller_tenure;
+      `,
+      [
+        listingId,
+        sellerId,
+        trimmedTitle,
+        String(description ?? "").trim(),
+        numericPrice,
+        String(currency),
+        region ? String(region) : null,
+        JSON.stringify(Array.isArray(features) ? features : []),
+        Boolean(isNew),
+        Boolean(isAutoIssue),
+      ],
+    );
+
+    return res.status(201).json(mapListing(result.rows[0]));
+  } catch (error) {
+    console.error("Create listing error:", error);
+    return res.status(500).json({ error: "Failed to create listing" });
+  }
+});
+
+async function loadOrdersForUser(userId) {
+  const result = await pool.query(
+    `
+      SELECT *
+      FROM orders
+      WHERE buyer_id = $1
+      ORDER BY created_at DESC;
+    `,
+    [userId],
+  );
+
+  return result.rows.map(mapOrder);
+}
+
+app.post("/api/orders", requireDatabase, async (req, res) => {
+  try {
+    const { buyer_id, buyer, listing_id } = req.body;
+    const buyerId = String(buyer_id ?? buyer?.id ?? "").trim();
+    const listingId = String(listing_id ?? "").trim();
+
+    if (!buyerId) {
+      return res.status(400).json({ error: "buyer_id is required" });
+    }
+
+    if (!listingId) {
+      return res.status(400).json({ error: "listing_id is required" });
+    }
+
+    await upsertUser({
+      id: buyerId,
+      username: buyer?.username ?? buyerId,
+      avatar: buyer?.avatar,
+    });
+
+    const listingResult = await pool.query(
+      `
+        SELECT l.*, u.username AS seller_username
+        FROM listings l
+        JOIN users u ON u.id = l.seller_id
+        WHERE l.id = $1 AND l.status = 'active';
+      `,
+      [listingId],
+    );
+
+    if (listingResult.rowCount === 0) {
+      return res.status(404).json({ error: "Listing not found" });
+    }
+
+    const listing = listingResult.rows[0];
+    const orderId = crypto.randomUUID();
+    const orderResult = await pool.query(
+      `
+        INSERT INTO orders (
+          id,
+          buyer_id,
+          seller_id,
+          listing_id,
+          listing_title,
+          listing_description,
+          price,
+          currency,
+          features,
+          seller_username,
+          status
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, 'paid')
+        RETURNING *;
+      `,
+      [
+        orderId,
+        buyerId,
+        listing.seller_id,
+        listing.id,
+        listing.title,
+        listing.description ?? "",
+        Number(listing.price),
+        listing.currency,
+        JSON.stringify(Array.isArray(listing.features) ? listing.features : []),
+        listing.seller_username,
+      ],
+    );
+
+    return res.status(201).json(mapOrder(orderResult.rows[0]));
+  } catch (error) {
+    console.error("Create order error:", error);
+    return res.status(500).json({ error: "Failed to create order" });
+  }
+});
+
+app.get("/api/orders", requireDatabase, async (req, res) => {
+  try {
+    const userId = String(req.query.user_id ?? "").trim();
+
+    if (!userId) {
+      return res.status(400).json({ error: "user_id is required" });
+    }
+
+    return res.json({ orders: await loadOrdersForUser(userId) });
+  } catch (error) {
+    console.error("Load orders error:", error);
+    return res.status(500).json({ error: "Failed to load orders" });
+  }
+});
+
+app.get("/api/getOrders", requireDatabase, async (req, res) => {
+  try {
+    const userId = String(req.query.user_id ?? req.query.telegram_id ?? "").trim();
+
+    if (!userId) {
+      return res.status(400).json({ error: "user_id is required" });
+    }
+
+    return res.json({ orders: await loadOrdersForUser(userId) });
+  } catch (error) {
+    console.error("Load getOrders error:", error);
+    return res.status(500).json({ error: "Failed to load orders" });
+  }
 });
 
 async function bicycleRequest(path, options = {}) {
@@ -180,6 +414,101 @@ function readToncenterTransactionHash(transaction) {
     transaction?.account_state_hash_after ??
     null
   );
+}
+
+function parseTelegramId(userId) {
+  const match = String(userId ?? "").match(/^telegram:(\d+)$/);
+  return match ? Number(match[1]) : null;
+}
+
+function normalizeUsername(username, userId) {
+  const value = String(username ?? "").trim();
+
+  if (value) {
+    return value.startsWith("@") ? value : `@${value}`;
+  }
+
+  return String(userId);
+}
+
+function mapUser(row) {
+  return {
+    id: row.id,
+    username: row.username,
+    avatar: row.avatar ?? undefined,
+    rating: Number(row.rating ?? 0),
+    reviews: Number(row.reviews ?? 0),
+    tenure: row.tenure ?? "0 days",
+  };
+}
+
+function mapListing(row) {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description ?? "",
+    price: Number(row.price),
+    currency: row.currency,
+    region: row.region ?? undefined,
+    features: Array.isArray(row.features) ? row.features : [],
+    isNew: row.is_new,
+    isAutoIssue: row.is_auto_issue,
+    seller: mapUser({
+      id: row.seller_id,
+      username: row.seller_username,
+      avatar: row.seller_avatar,
+      rating: row.seller_rating,
+      reviews: row.seller_reviews,
+      tenure: row.seller_tenure,
+    }),
+    created_at: row.created_at,
+  };
+}
+
+function mapOrder(row) {
+  return {
+    id: row.id,
+    orderId: row.id,
+    listingId: row.listing_id,
+    title: row.listing_title,
+    description: row.listing_description ?? "",
+    price: Number(row.price),
+    currency: row.currency,
+    features: Array.isArray(row.features) ? row.features : [],
+    status: row.status,
+    createdAt: row.created_at,
+    seller: {
+      id: row.seller_id,
+      username: row.seller_username,
+    },
+  };
+}
+
+async function upsertUser({ id, telegram_id, username, avatar }) {
+  const userId = String(id ?? "").trim();
+
+  if (!userId) {
+    throw new Error("id is required");
+  }
+
+  const telegramId = telegram_id ?? parseTelegramId(userId);
+  const normalizedUsername = normalizeUsername(username, userId);
+
+  const result = await pool.query(
+    `
+      INSERT INTO users (id, telegram_id, username, avatar)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (id) DO UPDATE SET
+        telegram_id = COALESCE(EXCLUDED.telegram_id, users.telegram_id),
+        username = EXCLUDED.username,
+        avatar = COALESCE(EXCLUDED.avatar, users.avatar),
+        updated_at = NOW()
+      RETURNING *;
+    `,
+    [userId, telegramId, normalizedUsername, avatar ?? null],
+  );
+
+  return mapUser(result.rows[0]);
 }
 
 async function syncDepositStatusesFromToncenter(pendingDeposits) {
@@ -659,6 +988,13 @@ app.use("/api/bicycle", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Backend started on http://localhost:${PORT}`);
-});
+initializeDatabase()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Backend started on http://localhost:${PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.error("Database initialization failed:", error);
+    process.exit(1);
+  });

@@ -18,65 +18,9 @@ import {
   getTelegramMiniAppUser,
   initTelegramMiniApp,
 } from "./services/telegramMiniApp";
-import { prepayApi } from "./services/prepayApi";
+import { prepayApi, type ApiOrder } from "./services/prepayApi";
 
-const mockListings: Listing[] = [
-  {
-    id: "1",
-    title: "Аккаунт Spotify с регионом Нигерия ✔ Без VPN",
-    description: "Полный доступ к Spotify Premium с регионом Нигерия",
-    price: 0.43,
-    currency: "TON",
-    seller: {
-      id: "1",
-      username: "dadaenq",
-      avatar: animeImage,
-      rating: 35209,
-      reviews: 35209,
-      tenure: "3 года",
-    },
-    region: "Нигерия",
-    features: ["Без VPN", "Полный доступ"],
-  },
-  {
-    id: "2",
-    title: "SPOTIFY • НОВЫЙ АККАУНТ • АВТОВЫДАЧА • Швеция",
-    description: "Новый аккаунт Spotify с автовыдачей",
-    price: 0.72,
-    currency: "TON",
-    seller: {
-      id: "2",
-      username: "f1rsoff",
-      avatar: jabaImage,
-      rating: 610,
-      reviews: 610,
-      tenure: "11 мес.",
-    },
-    region: "Швеция",
-    features: ["Новый", "Автовыдача"],
-    isNew: true,
-    isAutoIssue: true,
-  },
-  {
-    id: "3",
-    title: "SPOTIFY • НОВЫЙ АККАУНТ • АВТОВЫДАЧА • Канада",
-    description: "Новый аккаунт Spotify с автовыдачей",
-    price: 0.81,
-    currency: "TON",
-    seller: {
-      id: "2",
-      username: "f1rsoff",
-      avatar: eyeImage,
-      rating: 610,
-      reviews: 610,
-      tenure: "11 мес.",
-    },
-    region: "Канада",
-    features: ["Новый", "Автовыдача"],
-    isNew: true,
-    isAutoIssue: true,
-  },
-];
+const initialListings: Listing[] = [];
 
 const mockUser: User = {
   id: "current-user",
@@ -150,15 +94,17 @@ function AppContent() {
   const [depositMemo, setDepositMemo] = useState<string | null>(null);
   const [pendingDepositId, setPendingDepositId] = useState<string | null>(null);
   const [isDepositAddressLoading, setIsDepositAddressLoading] = useState(false);
+  const [orders, setOrders] = useState<ApiOrder[]>([]);
   const {
     appState,
     updateBalance,
     updateCurrentUser,
     setActiveTab,
     addListing,
+    updateListings,
   } = useAppState({
     balance: mockBalance,
-    listings: mockListings,
+    listings: initialListings,
     currentUser: mockUser,
     activeTab: "home",
   });
@@ -194,6 +140,51 @@ function AppContent() {
         : null,
     [appState.currentUser?.id],
   );
+
+  const refreshListings = useCallback(async () => {
+    try {
+      const response = await prepayApi.getListings();
+      updateListings(response.listings);
+    } catch (error) {
+      console.error("Failed to load listings:", error);
+    }
+  }, [updateListings]);
+
+  const refreshOrders = useCallback(async () => {
+    if (!bicycleUserId) {
+      setOrders([]);
+      return;
+    }
+
+    try {
+      const response = await prepayApi.getOrders(bicycleUserId);
+      setOrders(response.orders);
+    } catch (error) {
+      console.error("Failed to load orders:", error);
+      setOrders([]);
+    }
+  }, [bicycleUserId]);
+
+  useEffect(() => {
+    void refreshListings();
+  }, [refreshListings]);
+
+  useEffect(() => {
+    if (!bicycleUserId || !appState.currentUser) {
+      return;
+    }
+
+    void prepayApi.upsertUser({
+      id: bicycleUserId,
+      telegram_id: Number(bicycleUserId.replace("telegram:", "")),
+      username: appState.currentUser.username,
+      avatar: appState.currentUser.avatar,
+    });
+  }, [appState.currentUser, bicycleUserId]);
+
+  useEffect(() => {
+    void refreshOrders();
+  }, [refreshOrders]);
 
   const createDeposit = useCallback(
     async (force = false) => {
@@ -288,9 +279,23 @@ function AppContent() {
     setActiveTab(tabId);
   };
 
-  const handlePurchase = (listingId: string) => {
-    console.log("Purchasing listing:", listingId);
-    // Here you would implement the purchase logic
+  const handlePurchase = async (listingId: string) => {
+    if (!bicycleUserId || !appState.currentUser) {
+      console.error("Telegram user is required to create an order");
+      return;
+    }
+
+    try {
+      await prepayApi.createOrder({
+        buyer_id: bicycleUserId,
+        buyer: appState.currentUser,
+        listing_id: listingId,
+      });
+      await refreshOrders();
+      setActiveTab("orders");
+    } catch (error) {
+      console.error("Failed to create order:", error);
+    }
   };
 
   const handleBalanceUpdate = () => {
@@ -298,6 +303,15 @@ function AppContent() {
   };
 
   const renderCurrentPage = () => {
+    if (appState.activeTab === "orders") {
+      return (
+        <OrdersPage
+          username={appState.currentUser?.username ?? "user"}
+          orders={orders}
+        />
+      );
+    }
+
     switch (appState.activeTab) {
       case "home":
         return (
@@ -314,8 +328,22 @@ function AppContent() {
         return (
           <CreatePage
             currentUser={appState.currentUser}
-            onCreate={(listing) => {
-              addListing(listing);
+            onCreate={async (listing) => {
+              if (!bicycleUserId || !appState.currentUser) {
+                throw new Error("Откройте приложение через Telegram");
+              }
+
+              const createdListing = await prepayApi.createListing({
+                seller_id: bicycleUserId,
+                seller: appState.currentUser,
+                title: listing.title,
+                description: listing.description,
+                price: listing.price,
+                currency: listing.currency,
+                features: listing.features ?? [],
+              });
+
+              addListing(createdListing);
               setActiveTab("home");
             }}
           />
@@ -325,23 +353,6 @@ function AppContent() {
           <MessagesPage
             conversations={mockConversations}
             onOpenConversation={(id) => console.log("open conversation", id)}
-          />
-        );
-      case "orders":
-        return (
-          <OrdersPage
-            username={appState.currentUser?.username ?? "user"}
-            orders={appState.listings.map((l, idx) => ({
-              ...l,
-              orderId: `ORD-${1000 + idx}`,
-              createdAt: "Сегодня",
-              status:
-                idx % 3 === 0
-                  ? "Оплачен"
-                  : idx % 3 === 1
-                    ? "В обработке"
-                    : "Отменён",
-            }))}
           />
         );
       default:
