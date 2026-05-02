@@ -12,17 +12,13 @@ import eyeImage from "./assets/images/eye.jpg";
 import jabaImage from "./assets/images/jaba.jpg";
 import "./App.css";
 import OrdersPage from "./pages/OrdersPage/OrdersPage";
-import { useEffect, useCallback, useMemo, useState } from "react";
-import {
-  THEME,
-  TonConnectUIProvider,
-  useTonWallet,
-} from "@tonconnect/ui-react";
-import { getBicycleClient } from "./services/bicycleApi";
+import { useEffect, useCallback, useMemo, useRef, useState } from "react";
+import { THEME, TonConnectUIProvider } from "@tonconnect/ui-react";
 import {
   getTelegramMiniAppUser,
   initTelegramMiniApp,
 } from "./services/telegramMiniApp";
+import { prepayApi } from "./services/prepayApi";
 
 const mockListings: Listing[] = [
   {
@@ -96,8 +92,6 @@ const mockBalance: Balance = {
   symbol: "",
 };
 
-const DEPOSIT_HISTORY_PAGE_SIZE = 100;
-
 const mockConversations: ConversationPreview[] = [
   {
     id: "c1",
@@ -149,21 +143,12 @@ const navigationItems: NavigationItem[] = [
   { id: "orders", label: "Заказы", icon: "profile", path: "/orders" },
 ];
 
-const sumNanoTonDeposits = (amounts: string[]): number => {
-  const totalNano = amounts.reduce((total, amount) => {
-    try {
-      return total + BigInt(amount);
-    } catch {
-      return total;
-    }
-  }, 0n);
-
-  return Number(totalNano) / 1_000_000_000;
-};
-
 function AppContent() {
-  const wallet = useTonWallet();
+  const isCreatingDepositRef = useRef(false);
+  const [depositId, setDepositId] = useState<string | null>(null);
   const [depositAddress, setDepositAddress] = useState<string | null>(null);
+  const [depositMemo, setDepositMemo] = useState<string | null>(null);
+  const [pendingDepositId, setPendingDepositId] = useState<string | null>(null);
   const [isDepositAddressLoading, setIsDepositAddressLoading] = useState(false);
   const {
     appState,
@@ -171,7 +156,6 @@ function AppContent() {
     updateCurrentUser,
     setActiveTab,
     addListing,
-    adjustBalance,
   } = useAppState({
     balance: mockBalance,
     listings: mockListings,
@@ -203,96 +187,99 @@ function AppContent() {
     });
   }, [updateCurrentUser]);
 
-  const bicycleUserId = useMemo(() => {
-    if (appState.currentUser?.id.startsWith("telegram:")) {
-      return appState.currentUser.id;
-    }
+  const bicycleUserId = useMemo(
+    () =>
+      appState.currentUser?.id.startsWith("telegram:")
+        ? appState.currentUser.id
+        : null,
+    [appState.currentUser?.id],
+  );
 
-    if (wallet) {
-      return `wallet:${wallet.account.address}`;
-    }
-
-    return null;
-  }, [appState.currentUser?.id, wallet]);
-
-  const ensureDepositAddress = useCallback(async () => {
-    if (!wallet || !bicycleUserId) {
-      setDepositAddress(null);
+  const createDeposit = useCallback(async (force = false) => {
+    if (isCreatingDepositRef.current) {
       return;
     }
 
+    if (!force && depositId) {
+      return;
+    }
+
+    if (!bicycleUserId) {
+      setDepositId(null);
+      setDepositAddress(null);
+      setDepositMemo(null);
+      return;
+    }
+
+    isCreatingDepositRef.current = true;
     setIsDepositAddressLoading(true);
 
     try {
-      const client = getBicycleClient();
-      const addresses = await client.getAllAddresses(bicycleUserId);
-      const existingAddress = addresses.find(
-        (address) => !address.currency || address.currency === "TON",
-      );
-
-      if (existingAddress) {
-        setDepositAddress(existingAddress.address);
-        return;
-      }
-
-      const newAddress = await client.createNewAddress("TON", bicycleUserId);
-      setDepositAddress(newAddress.address);
+      const details = await prepayApi.getDepositDetails(bicycleUserId);
+      setDepositId(details.id);
+      setDepositAddress(details.address);
+      setDepositMemo(details.memo);
     } catch (error) {
       console.error("Failed to load deposit address:", error);
+      setDepositId(null);
       setDepositAddress(null);
+      setDepositMemo(null);
     } finally {
+      isCreatingDepositRef.current = false;
       setIsDepositAddressLoading(false);
     }
-  }, [bicycleUserId, wallet]);
+  }, [bicycleUserId, depositId]);
 
   useEffect(() => {
-    void ensureDepositAddress();
-  }, [ensureDepositAddress]);
+    void createDeposit();
+  }, [createDeposit]);
 
   const refreshDepositBalance = useCallback(async () => {
-    if (!wallet || !bicycleUserId) {
+    if (!bicycleUserId) {
       updateBalance({ ...mockBalance, amount: 0 });
       return;
     }
 
     try {
-      const client = getBicycleClient();
-      const depositAmounts: string[] = [];
-      let offset = 0;
-      let totalIncomes: number | undefined;
-
-      do {
-        const history = await client.getDepositHistory(
-          bicycleUserId,
-          "TON",
-          DEPOSIT_HISTORY_PAGE_SIZE,
-          offset,
-        );
-
-        totalIncomes = history.total_incomes;
-        depositAmounts.push(...history.incomes.map((income) => income.amount));
-        offset += history.incomes.length;
-
-        if (history.incomes.length < DEPOSIT_HISTORY_PAGE_SIZE) {
-          break;
-        }
-      } while (totalIncomes === undefined || offset < totalIncomes);
-
-      const amount = sumNanoTonDeposits(depositAmounts);
+      const balance = await prepayApi.getDepositBalance(bicycleUserId);
 
       updateBalance({
         ...mockBalance,
-        amount,
+        amount: balance.amount,
       });
     } catch (error) {
       console.error("Failed to load deposit history:", error);
       updateBalance({ ...mockBalance, amount: 0 });
     }
-  }, [bicycleUserId, updateBalance, wallet]);
+  }, [bicycleUserId, updateBalance]);
 
   useEffect(() => {
     void refreshDepositBalance();
   }, [refreshDepositBalance]);
+
+  useEffect(() => {
+    if (!pendingDepositId) {
+      return;
+    }
+
+    const intervalId = window.setInterval(async () => {
+      try {
+        const statuses = await prepayApi.getDepositStatuses([pendingDepositId]);
+        const deposit = statuses.deposits[0];
+
+        if (deposit?.status === "confirmed") {
+          window.clearInterval(intervalId);
+          setPendingDepositId(null);
+          void refreshDepositBalance();
+          void createDeposit(true);
+        }
+      } catch (error) {
+        console.error("Failed to load deposit status:", error);
+      }
+    }, 5000);
+
+    return () => window.clearInterval(intervalId);
+  }, [pendingDepositId, refreshDepositBalance]);
 
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
@@ -303,8 +290,8 @@ function AppContent() {
     // Here you would implement the purchase logic
   };
 
-  const handleBalanceUpdate = (amount: number) => {
-    adjustBalance("add", amount);
+  const handleBalanceUpdate = () => {
+    void refreshDepositBalance();
   };
 
   const renderCurrentPage = () => {
@@ -364,8 +351,11 @@ function AppContent() {
       <TopBar
         balance={appState.balance}
         user={appState.currentUser}
+        depositId={depositId}
         depositAddress={depositAddress}
+        depositMemo={depositMemo}
         isDepositAddressLoading={isDepositAddressLoading}
+        onDepositSent={setPendingDepositId}
         onBalanceUpdate={handleBalanceUpdate}
       />
 

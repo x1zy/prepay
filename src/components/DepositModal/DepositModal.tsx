@@ -3,26 +3,43 @@ import { useTonConnectUI, useTonWallet } from "@tonconnect/ui-react";
 import { beginCell, toNano } from "@ton/core";
 import "./DepositModal.css";
 
+const STATIC_DEPOSIT_ADDRESS =
+  "0QBfaGzc2PsHLs9VGVl3jUzLz5FM446CEQ--QWXenQQ1Rk44";
+
 interface DepositModalProps {
   isOpen: boolean;
   onClose: () => void;
   depositAddress?: string | null;
+  depositId?: string | null;
+  depositMemo?: string | null;
   isDepositAddressLoading?: boolean;
+  onDepositSent?: (depositId: string) => void;
   onSuccess?: (amount: number) => void;
 }
 
 const DepositModal: React.FC<DepositModalProps> = ({
   isOpen,
   onClose,
-  depositAddress,
-  isDepositAddressLoading = false,
+  depositId,
+  depositMemo,
+  onDepositSent,
   onSuccess,
 }) => {
   const [amount, setAmount] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [localDepositMemo, setLocalDepositMemo] = useState<string>("");
   const wallet = useTonWallet();
   const [tonConnectUI] = useTonConnectUI();
+  const paymentAddress = STATIC_DEPOSIT_ADDRESS;
+  const transactionMemo = depositMemo || localDepositMemo;
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setLocalDepositMemo(crypto.randomUUID());
+      setError(null);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -34,8 +51,13 @@ const DepositModal: React.FC<DepositModalProps> = ({
       return;
     }
 
-    if (!depositAddress) {
+    if (!paymentAddress) {
       setError("Адрес депозита еще не готов");
+      return;
+    }
+
+    if (!transactionMemo) {
+      setError("MEMO депозита еще не готов");
       return;
     }
 
@@ -51,7 +73,7 @@ const DepositModal: React.FC<DepositModalProps> = ({
 
       const payload = beginCell()
         .storeUint(0, 32)
-        .storeStringTail("Deposit")
+        .storeStringTail(transactionMemo)
         .endCell()
         .toBoc()
         .toString("base64");
@@ -60,7 +82,7 @@ const DepositModal: React.FC<DepositModalProps> = ({
         validUntil: Math.floor(Date.now() / 1000) + 300,
         messages: [
           {
-            address: depositAddress,
+            address: paymentAddress,
             amount: toNano(depositAmount).toString(),
             payload,
           },
@@ -70,6 +92,9 @@ const DepositModal: React.FC<DepositModalProps> = ({
       const result = await tonConnectUI.sendTransaction(transaction);
 
       if (result) {
+        if (depositId) {
+          onDepositSent?.(depositId);
+        }
         onSuccess?.(depositAmount);
         setAmount("");
         onClose();
@@ -138,10 +163,11 @@ const DepositModal: React.FC<DepositModalProps> = ({
                   Транзакция будет отправлена на адрес депозита
                 </p>
                 <p className="deposit-address">
-                  {depositAddress
-                    ? `${depositAddress.slice(0, 10)}...${depositAddress.slice(-10)}`
-                    : "Загрузка..."}
+                  {paymentAddress.slice(0, 10)}...{paymentAddress.slice(-10)}
                 </p>
+                {transactionMemo && (
+                  <p className="deposit-address">MEMO: {transactionMemo}</p>
+                )}
               </div>
 
               <div className="deposit-actions">
@@ -156,11 +182,7 @@ const DepositModal: React.FC<DepositModalProps> = ({
                   className="deposit-submit-btn"
                   onClick={handleDeposit}
                   disabled={
-                    isLoading ||
-                    isDepositAddressLoading ||
-                    !depositAddress ||
-                    !amount ||
-                    parseFloat(amount) <= 0
+                    isLoading || !transactionMemo || !amount || parseFloat(amount) <= 0
                   }
                 >
                   {isLoading ? "Отправка..." : "Отправить"}
