@@ -195,40 +195,43 @@ function AppContent() {
     [appState.currentUser?.id],
   );
 
-  const createDeposit = useCallback(async (force = false) => {
-    if (isCreatingDepositRef.current) {
-      return;
-    }
+  const createDeposit = useCallback(
+    async (force = false) => {
+      if (isCreatingDepositRef.current) {
+        return;
+      }
 
-    if (!force && depositId) {
-      return;
-    }
+      if (!force && depositId) {
+        return;
+      }
 
-    if (!bicycleUserId) {
-      setDepositId(null);
-      setDepositAddress(null);
-      setDepositMemo(null);
-      return;
-    }
+      if (!bicycleUserId) {
+        setDepositId(null);
+        setDepositAddress(null);
+        setDepositMemo(null);
+        return;
+      }
 
-    isCreatingDepositRef.current = true;
-    setIsDepositAddressLoading(true);
+      isCreatingDepositRef.current = true;
+      setIsDepositAddressLoading(true);
 
-    try {
-      const details = await prepayApi.getDepositDetails(bicycleUserId);
-      setDepositId(details.id);
-      setDepositAddress(details.address);
-      setDepositMemo(details.memo);
-    } catch (error) {
-      console.error("Failed to load deposit address:", error);
-      setDepositId(null);
-      setDepositAddress(null);
-      setDepositMemo(null);
-    } finally {
-      isCreatingDepositRef.current = false;
-      setIsDepositAddressLoading(false);
-    }
-  }, [bicycleUserId, depositId]);
+      try {
+        const details = await prepayApi.getDepositDetails(bicycleUserId);
+        setDepositId(details.id);
+        setDepositAddress(details.address);
+        setDepositMemo(details.memo);
+      } catch (error) {
+        console.error("Failed to load deposit address:", error);
+        setDepositId(null);
+        setDepositAddress(null);
+        setDepositMemo(null);
+      } finally {
+        isCreatingDepositRef.current = false;
+        setIsDepositAddressLoading(false);
+      }
+    },
+    [bicycleUserId, depositId],
+  );
 
   useEffect(() => {
     void createDeposit();
@@ -279,7 +282,7 @@ function AppContent() {
     }, 5000);
 
     return () => window.clearInterval(intervalId);
-  }, [pendingDepositId, refreshDepositBalance]);
+  }, [createDeposit, pendingDepositId, refreshDepositBalance]);
 
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
