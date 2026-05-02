@@ -359,7 +359,9 @@ function AppContent() {
         depositMemo={depositMemo}
         isDepositAddressLoading={isDepositAddressLoading}
         onDepositSent={setPendingDepositId}
+        withdrawUserId={bicycleUserId}
         onBalanceUpdate={handleBalanceUpdate}
+        onWithdrawSuccess={handleBalanceUpdate}
       />
 
       <main className="main-content">{renderCurrentPage()}</main>

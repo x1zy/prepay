@@ -25,6 +25,29 @@ export interface DepositBalance {
   currency: "TON";
   memo: string;
   user_id: string;
+  confirmed_deposits?: string;
+  reserved_withdrawals?: string;
+  processed_withdrawals?: string;
+}
+
+export interface CreateWithdrawalRequest {
+  user_id: string;
+  destination: string;
+  amount: string;
+}
+
+export interface Withdrawal {
+  id: string;
+  user_id: string;
+  destination: string;
+  amount: string;
+  currency: "TON";
+  status: "pending" | "processing" | "processed" | "failed" | "rejected";
+  tx_hash: string | null;
+  bicycle_withdrawal_id: number | null;
+  memo: string;
+  created_at: string;
+  updated_at: string;
 }
 
 const getApiUrl = (): string => {
@@ -43,8 +66,10 @@ const request = async <T>(
 ): Promise<T> => {
   const response = await fetch(`${getApiUrl()}${path}`, {
     ...options,
+    cache: "no-store",
     headers: {
       "Content-Type": "application/json",
+      "Cache-Control": "no-cache",
       "ngrok-skip-browser-warning": "true",
       ...options.headers,
     },
@@ -78,5 +103,17 @@ export const prepayApi = {
   getDepositBalance(userId: string): Promise<DepositBalance> {
     const params = new URLSearchParams({ user_id: userId });
     return request<DepositBalance>(`/api/deposit/balance?${params.toString()}`);
+  },
+
+  createWithdrawal(payload: CreateWithdrawalRequest): Promise<Withdrawal> {
+    return request<Withdrawal>("/api/withdrawals", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getWithdrawalStatus(withdrawalId: string): Promise<Withdrawal> {
+    const params = new URLSearchParams({ id: withdrawalId });
+    return request<Withdrawal>(`/api/withdrawals/status?${params.toString()}`);
   },
 };

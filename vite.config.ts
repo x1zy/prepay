@@ -16,11 +16,16 @@ export default defineConfig({
   server: {
     port: 5174,
     host: true,
+    allowedHosts: ["grubbily-acclamatory-kai.ngrok-free.dev"],
     proxy: {
-      "/api/bicycle": {
-        target: "http://localhost:8081",
+      // "/api/bicycle": {
+      //   target: "http://localhost:8081",
+      //   changeOrigin: true,
+      //   rewrite: (path) => path.replace(/^\/api\/bicycle/, ""),
+      // },
+      "/api": {
+        target: "http://localhost:4000",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/bicycle/, ""),
       },
     },
     // В development режиме файлы из public доступны по корневому пути

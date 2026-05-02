@@ -4,6 +4,7 @@ import tonSymbol from "../../assets/images/ton_symbol.svg";
 import "./TopBar.css";
 import { TonConnectButton } from "@tonconnect/ui-react";
 import DepositModal from "../DepositModal/DepositModal";
+import WithdrawModal from "../WithdrawModal/WithdrawModal";
 
 interface TopBarProps {
   balance: Balance;
@@ -13,7 +14,9 @@ interface TopBarProps {
   depositMemo?: string | null;
   isDepositAddressLoading?: boolean;
   onDepositSent?: (depositId: string) => void;
-  onBalanceUpdate?: (amount: number) => void;
+  withdrawUserId?: string | null;
+  onBalanceUpdate?: () => void;
+  onWithdrawSuccess?: () => void;
 }
 
 const TopBar: React.FC<TopBarProps> = ({
@@ -25,12 +28,25 @@ const TopBar: React.FC<TopBarProps> = ({
   isDepositAddressLoading = false,
   onDepositSent,
   onBalanceUpdate,
+  withdrawUserId,
+  onWithdrawSuccess,
 }) => {
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
+  const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
 
-  const handleDepositSuccess = (amount: number) => {
-    onBalanceUpdate?.(amount);
+  const handleDepositSuccess = () => {
+    onBalanceUpdate?.();
   };
+
+  const handleWithdrawSuccess = () => {
+    if (onWithdrawSuccess) {
+      onWithdrawSuccess();
+      return;
+    }
+
+    onBalanceUpdate?.();
+  };
+
   return (
     <div className="top-bar">
       <div className="balance-section">
@@ -48,9 +64,10 @@ const TopBar: React.FC<TopBarProps> = ({
           </button>
           <button
             className="balance-btn subtract-btn"
-            aria-label="Subtract balance"
+            aria-label="Withdraw balance"
+            onClick={() => setIsWithdrawModalOpen(true)}
           >
-            −
+            -
           </button>
         </div>
       </div>
@@ -71,6 +88,14 @@ const TopBar: React.FC<TopBarProps> = ({
         isDepositAddressLoading={isDepositAddressLoading}
         onDepositSent={onDepositSent}
         onSuccess={handleDepositSuccess}
+      />
+
+      <WithdrawModal
+        isOpen={isWithdrawModalOpen}
+        onClose={() => setIsWithdrawModalOpen(false)}
+        userId={withdrawUserId}
+        availableAmount={balance.amount}
+        onSuccess={handleWithdrawSuccess}
       />
     </div>
   );
