@@ -26,6 +26,8 @@ export interface DepositBalance {
   memo: string;
   user_id: string;
   confirmed_deposits?: string;
+  purchase_debits?: string;
+  sale_credits?: string;
   reserved_withdrawals?: string;
   processed_withdrawals?: string;
 }
@@ -59,9 +61,13 @@ export interface ApiOrder {
   price: number;
   currency: string;
   features: string[];
-  status: "paid" | "pending" | "canceled";
+  status: "paid" | "completed" | "disputed" | "pending" | "canceled";
   createdAt: string;
   seller: {
+    id: string;
+    username: string;
+  };
+  buyer: {
     id: string;
     username: string;
   };
@@ -179,5 +185,19 @@ export const prepayApi = {
   getOrders(userId: string) {
     const params = new URLSearchParams({ user_id: userId });
     return request<{ orders: ApiOrder[] }>(`/api/orders?${params.toString()}`);
+  },
+
+  completeOrder(orderId: string, userId: string) {
+    return request<ApiOrder>(`/api/orders/${orderId}/complete`, {
+      method: "POST",
+      body: JSON.stringify({ user_id: userId }),
+    });
+  },
+
+  disputeOrder(orderId: string, userId: string) {
+    return request<ApiOrder>(`/api/orders/${orderId}/dispute`, {
+      method: "POST",
+      body: JSON.stringify({ user_id: userId }),
+    });
   },
 };

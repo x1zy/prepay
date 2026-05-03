@@ -1,15 +1,10 @@
-import type { Listing, User, Balance, NavigationItem } from "./types";
+﻿import type { Listing, User, Balance, NavigationItem } from "./types";
 import TopBar from "./components/TopBar/TopBar";
 import BottomNavigation from "./components/BottomNavigation/BottomNavigation";
 import HomePage from "./pages/HomePage/HomePage";
 import SearchPage from "./pages/SearchPage/SearchPage";
 import { useAppState } from "./hooks/useAppState";
 import CreatePage from "./pages/CreatePage/CreatePage";
-import MessagesPage from "./pages/MessagesPage/MessagesPage";
-import type { ConversationPreview } from "./pages/MessagesPage/MessagesPage";
-import animeImage from "./assets/images/anime.jpg";
-import eyeImage from "./assets/images/eye.jpg";
-import jabaImage from "./assets/images/jaba.jpg";
 import "./App.css";
 import OrdersPage from "./pages/OrdersPage/OrdersPage";
 import { useEffect, useCallback, useMemo, useRef, useState } from "react";
@@ -27,7 +22,7 @@ const mockUser: User = {
   username: "user123",
   rating: 0,
   reviews: 0,
-  tenure: "0 дней",
+  tenure: "0 РґРЅРµР№",
 };
 
 const mockBalance: Balance = {
@@ -36,54 +31,10 @@ const mockBalance: Balance = {
   symbol: "",
 };
 
-const mockConversations: ConversationPreview[] = [
-  {
-    id: "c1",
-    user: {
-      id: "1",
-      username: "dadaenq",
-      avatar: animeImage,
-      rating: 35209,
-      reviews: 35209,
-      tenure: "3 года",
-    },
-    lastMessage: "Здравствуйте! Интересует подписка?",
-    time: "12:30",
-    unread: 2,
-  },
-  {
-    id: "c2",
-    user: {
-      id: "2",
-      username: "f1rsoff",
-      avatar: jabaImage,
-      rating: 610,
-      reviews: 610,
-      tenure: "11 мес.",
-    },
-    lastMessage: "Готов выдать аккаунт сразу после оплаты",
-    time: "Вчера",
-  },
-  {
-    id: "c3",
-    user: {
-      id: "3",
-      username: "support",
-      avatar: eyeImage,
-      rating: 0,
-      reviews: 0,
-      tenure: "—",
-    },
-    lastMessage: "Напомню о правилах безопасной сделки",
-    time: "21.10",
-  },
-];
-
 const navigationItems: NavigationItem[] = [
   { id: "home", label: "Главная", icon: "home", path: "/" },
   { id: "search", label: "Поиск", icon: "search", path: "/search" },
   { id: "create", label: "Создать", icon: "create", path: "/create" },
-  { id: "messages", label: "Сообщения", icon: "messages", path: "/messages" },
   { id: "orders", label: "Заказы", icon: "profile", path: "/orders" },
 ];
 
@@ -95,6 +46,13 @@ function AppContent() {
   const [pendingDepositId, setPendingDepositId] = useState<string | null>(null);
   const [isDepositAddressLoading, setIsDepositAddressLoading] = useState(false);
   const [orders, setOrders] = useState<ApiOrder[]>([]);
+  const [purchasingListingId, setPurchasingListingId] = useState<string | null>(
+    null,
+  );
+  const [processingOrderId, setProcessingOrderId] = useState<string | null>(
+    null,
+  );
+  const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const {
     appState,
     updateBalance,
@@ -281,25 +239,81 @@ function AppContent() {
 
   const handlePurchase = async (listingId: string) => {
     if (!bicycleUserId || !appState.currentUser) {
-      console.error("Telegram user is required to create an order");
+      setPurchaseError(
+        "РћС‚РєСЂРѕР№С‚Рµ РїСЂРёР»РѕР¶РµРЅРёРµ С‡РµСЂРµР· Telegram РґР»СЏ РїРѕРєСѓРїРєРё.",
+      );
       return;
     }
 
     try {
+      setPurchasingListingId(listingId);
+      setPurchaseError(null);
       await prepayApi.createOrder({
         buyer_id: bicycleUserId,
         buyer: appState.currentUser,
         listing_id: listingId,
       });
       await refreshOrders();
+      await refreshDepositBalance();
       setActiveTab("orders");
     } catch (error) {
       console.error("Failed to create order:", error);
+      setPurchaseError(
+        error instanceof Error && error.message.includes("Insufficient balance")
+          ? "Недостаточно TON на балансе для покупки."
+          : "Не удалось создать заказ. Попробуйте еще раз.",
+      );
+    } finally {
+      setPurchasingListingId(null);
     }
   };
 
   const handleBalanceUpdate = () => {
     void refreshDepositBalance();
+  };
+
+  const handleCompleteOrder = async (orderId: string) => {
+    if (!bicycleUserId) {
+      setPurchaseError(
+        "Откройте приложение через Telegram для изменения заказа.",
+      );
+      return;
+    }
+
+    try {
+      setProcessingOrderId(orderId);
+      setPurchaseError(null);
+      await prepayApi.completeOrder(orderId, bicycleUserId);
+      await refreshOrders();
+      await refreshDepositBalance();
+    } catch (error) {
+      console.error("Failed to complete order:", error);
+      setPurchaseError("Не удалось подтвердить выполнение заказа.");
+    } finally {
+      setProcessingOrderId(null);
+    }
+  };
+
+  const handleDisputeOrder = async (orderId: string) => {
+    if (!bicycleUserId) {
+      setPurchaseError(
+        "Откройте приложение через Telegram для изменения заказа.",
+      );
+      return;
+    }
+
+    try {
+      setProcessingOrderId(orderId);
+      setPurchaseError(null);
+      await prepayApi.disputeOrder(orderId, bicycleUserId);
+      await refreshOrders();
+      await refreshDepositBalance();
+    } catch (error) {
+      console.error("Failed to dispute order:", error);
+      setPurchaseError("Не удалось открыть спор по заказу.");
+    } finally {
+      setProcessingOrderId(null);
+    }
   };
 
   const renderCurrentPage = () => {
@@ -308,6 +322,10 @@ function AppContent() {
         <OrdersPage
           username={appState.currentUser?.username ?? "user"}
           orders={orders}
+          currentUserId={bicycleUserId}
+          processingOrderId={processingOrderId}
+          onCompleteOrder={handleCompleteOrder}
+          onDisputeOrder={handleDisputeOrder}
         />
       );
     }
@@ -315,13 +333,18 @@ function AppContent() {
     switch (appState.activeTab) {
       case "home":
         return (
-          <HomePage listings={appState.listings} onPurchase={handlePurchase} />
+          <HomePage
+            listings={appState.listings}
+            onPurchase={handlePurchase}
+            purchasingListingId={purchasingListingId}
+          />
         );
       case "search":
         return (
           <SearchPage
             listings={appState.listings}
             onPurchase={handlePurchase}
+            purchasingListingId={purchasingListingId}
           />
         );
       case "create":
@@ -348,13 +371,6 @@ function AppContent() {
             }}
           />
         );
-      case "messages":
-        return (
-          <MessagesPage
-            conversations={mockConversations}
-            onOpenConversation={(id) => console.log("open conversation", id)}
-          />
-        );
       default:
         return <div className="coming-soon"></div>;
     }
@@ -375,7 +391,15 @@ function AppContent() {
         onWithdrawSuccess={handleBalanceUpdate}
       />
 
-      <main className="main-content">{renderCurrentPage()}</main>
+      <main className="main-content">
+        {purchaseError && (
+          <div className="app-alert">
+            <span>{purchaseError}</span>
+            <button onClick={() => setPurchaseError(null)}>x</button>
+          </div>
+        )}
+        {renderCurrentPage()}
+      </main>
 
       <BottomNavigation
         items={navigationItems}

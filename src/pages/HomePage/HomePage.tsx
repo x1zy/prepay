@@ -5,10 +5,15 @@ import './HomePage.css';
 
 interface HomePageProps {
   listings: Listing[];
-  onPurchase: (listingId: string) => void;
+  onPurchase: (listingId: string) => Promise<void> | void;
+  purchasingListingId?: string | null;
 }
 
-const HomePage: React.FC<HomePageProps> = ({ listings, onPurchase }) => {
+const HomePage: React.FC<HomePageProps> = ({
+  listings,
+  onPurchase,
+  purchasingListingId,
+}) => {
   return (
     <div className="home-page">
       <div className="listings-container">
@@ -17,6 +22,7 @@ const HomePage: React.FC<HomePageProps> = ({ listings, onPurchase }) => {
             key={listing.id}
             listing={listing}
             onPurchase={onPurchase}
+            isPurchasing={purchasingListingId === listing.id}
           />
         ))}
       </div>

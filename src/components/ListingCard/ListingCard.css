@@ -129,6 +129,11 @@
   background: #1976D2;
 }
 
+.purchase-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 .purchase-button:active {
   background: #1565C0;
 }
@@ -141,6 +146,11 @@
 .currency-img {
   width: 16px;
   height: 16px;
+}
+
+.purchase-state {
+  color: #dbeafe;
+  font-size: 14px;
 }
 
 .dropdown-arrow {

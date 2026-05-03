@@ -15,6 +15,9 @@ const SERVICE_WALLET_ADDRESS =
 const TONCENTER_API_URL =
   process.env.TONCENTER_API_URL ?? "https://testnet.toncenter.com/api/v3";
 const TONCENTER_API_KEY = process.env.TONCENTER_API_KEY;
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const TELEGRAM_API_URL =
+  process.env.TELEGRAM_API_URL ?? "https://api.telegram.org";
 const DEPOSIT_HISTORY_PAGE_SIZE = 100;
 const TONCENTER_TRANSACTIONS_LIMIT = 100;
 const deposits = new Map();
@@ -34,7 +37,10 @@ app.use(express.json());
 app.set("etag", false);
 
 app.use("/api", (req, res, next) => {
-  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader(
+    "Cache-Control",
+    "no-store, no-cache, must-revalidate, proxy-revalidate",
+  );
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.setHeader("Surrogate-Control", "no-store");
@@ -162,10 +168,13 @@ app.post("/api/listings", requireDatabase, async (req, res) => {
 async function loadOrdersForUser(userId) {
   const result = await pool.query(
     `
-      SELECT *
-      FROM orders
-      WHERE buyer_id = $1
-      ORDER BY created_at DESC;
+      SELECT
+        o.*,
+        buyer.username AS buyer_username
+      FROM orders o
+      JOIN users buyer ON buyer.id = o.buyer_id
+      WHERE o.buyer_id = $1 OR o.seller_id = $1
+      ORDER BY o.created_at DESC;
     `,
     [userId],
   );
@@ -174,6 +183,8 @@ async function loadOrdersForUser(userId) {
 }
 
 app.post("/api/orders", requireDatabase, async (req, res) => {
+  const client = await pool.connect();
+
   try {
     const { buyer_id, buyer, listing_id } = req.body;
     const buyerId = String(buyer_id ?? buyer?.id ?? "").trim();
@@ -187,29 +198,64 @@ app.post("/api/orders", requireDatabase, async (req, res) => {
       return res.status(400).json({ error: "listing_id is required" });
     }
 
-    await upsertUser({
-      id: buyerId,
-      username: buyer?.username ?? buyerId,
-      avatar: buyer?.avatar,
-    });
+    await client.query("BEGIN");
+    await client.query("SELECT pg_advisory_xact_lock(hashtext($1));", [
+      buyerId,
+    ]);
 
-    const listingResult = await pool.query(
+    const buyerUser = await upsertUser(
+      {
+        id: buyerId,
+        username: buyer?.username ?? buyerId,
+        avatar: buyer?.avatar,
+      },
+      client,
+    );
+
+    const listingResult = await client.query(
       `
         SELECT l.*, u.username AS seller_username
         FROM listings l
         JOIN users u ON u.id = l.seller_id
-        WHERE l.id = $1 AND l.status = 'active';
+        WHERE l.id = $1 AND l.status = 'active'
+        FOR UPDATE OF l;
       `,
       [listingId],
     );
 
     if (listingResult.rowCount === 0) {
+      await client.query("ROLLBACK");
       return res.status(404).json({ error: "Listing not found" });
     }
 
     const listing = listingResult.rows[0];
+
+    if (listing.seller_id === buyerId) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "You cannot buy your own listing" });
+    }
+
+    if (listing.currency !== "TON") {
+      await client.query("ROLLBACK");
+      return res
+        .status(400)
+        .json({ error: "Only TON listings can be purchased" });
+    }
+
+    const priceNano = toNanoTon(listing.price);
+    const balance = await getUserBalance(buyerId, client);
+
+    if (priceNano > balance.availableNano) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        error: "Insufficient balance",
+        available: balance.availableNano.toString(),
+        required: priceNano.toString(),
+      });
+    }
+
     const orderId = crypto.randomUUID();
-    const orderResult = await pool.query(
+    const orderResult = await client.query(
       `
         INSERT INTO orders (
           id,
@@ -241,12 +287,118 @@ app.post("/api/orders", requireDatabase, async (req, res) => {
       ],
     );
 
+    await client.query("COMMIT");
+
+    await sendOrderPaidNotificationsWithProfileLinks({
+      orderId,
+      buyerId,
+      sellerId: listing.seller_id,
+      buyerUsername: buyerUser.username,
+      sellerUsername: listing.seller_username,
+    });
+
     return res.status(201).json(mapOrder(orderResult.rows[0]));
   } catch (error) {
+    try {
+      await client.query("ROLLBACK");
+    } catch (rollbackError) {
+      console.error("Create order rollback error:", rollbackError);
+    }
+
     console.error("Create order error:", error);
     return res.status(500).json({ error: "Failed to create order" });
+  } finally {
+    client.release();
   }
 });
+
+async function updateOrderStatus(req, res, nextStatus, allowedRoles) {
+  const client = await pool.connect();
+
+  try {
+    const orderId = String(req.params.id ?? "").trim();
+    const userId = String(req.body.user_id ?? "").trim();
+
+    if (!orderId) {
+      return res.status(400).json({ error: "order id is required" });
+    }
+
+    if (!userId) {
+      return res.status(400).json({ error: "user_id is required" });
+    }
+
+    await client.query("BEGIN");
+
+    const orderResult = await client.query(
+      `
+        SELECT *
+        FROM orders
+        WHERE id = $1
+        FOR UPDATE;
+      `,
+      [orderId],
+    );
+
+    if (orderResult.rowCount === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    const order = orderResult.rows[0];
+
+    const isBuyer = order.buyer_id === userId;
+    const isSeller = order.seller_id === userId;
+    const canUpdate =
+      (allowedRoles.includes("buyer") && isBuyer) ||
+      (allowedRoles.includes("seller") && isSeller);
+
+    if (!canUpdate) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ error: "You cannot update this order" });
+    }
+
+    if (order.status !== "paid") {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        error: "Order status cannot be changed",
+        status: order.status,
+      });
+    }
+
+    const updatedOrder = await client.query(
+      `
+        UPDATE orders
+        SET status = $2, updated_at = NOW()
+        WHERE id = $1
+        RETURNING *;
+      `,
+      [orderId, nextStatus],
+    );
+
+    await client.query("COMMIT");
+
+    return res.json(mapOrder(updatedOrder.rows[0]));
+  } catch (error) {
+    try {
+      await client.query("ROLLBACK");
+    } catch (rollbackError) {
+      console.error("Update order rollback error:", rollbackError);
+    }
+
+    console.error("Update order status error:", error);
+    return res.status(500).json({ error: "Failed to update order status" });
+  } finally {
+    client.release();
+  }
+}
+
+app.post("/api/orders/:id/complete", requireDatabase, (req, res) =>
+  updateOrderStatus(req, res, "completed", ["buyer"]),
+);
+
+app.post("/api/orders/:id/dispute", requireDatabase, (req, res) =>
+  updateOrderStatus(req, res, "disputed", ["buyer", "seller"]),
+);
 
 app.get("/api/orders", requireDatabase, async (req, res) => {
   try {
@@ -265,7 +417,9 @@ app.get("/api/orders", requireDatabase, async (req, res) => {
 
 app.get("/api/getOrders", requireDatabase, async (req, res) => {
   try {
-    const userId = String(req.query.user_id ?? req.query.telegram_id ?? "").trim();
+    const userId = String(
+      req.query.user_id ?? req.query.telegram_id ?? "",
+    ).trim();
 
     if (!userId) {
       return res.status(400).json({ error: "user_id is required" });
@@ -383,6 +537,43 @@ function getProcessedWithdrawalTotal(userId) {
     .reduce((total, withdrawal) => total + BigInt(withdrawal.amount), 0n);
 }
 
+async function getOrderAccountingTotals(userId, dbClient = pool) {
+  if (!dbClient) {
+    return {
+      purchaseDebits: 0n,
+      saleCredits: 0n,
+    };
+  }
+
+  const result = await dbClient.query(
+    `
+      SELECT
+        COALESCE(
+          SUM((price * 1000000000)::numeric(40, 0))
+            FILTER (
+              WHERE buyer_id = $1
+                AND status IN ('paid', 'completed', 'disputed')
+            ),
+          0
+        )::text AS purchase_debits,
+        COALESCE(
+          SUM((price * 1000000000)::numeric(40, 0))
+            FILTER (WHERE seller_id = $1 AND status = 'completed'),
+          0
+        )::text AS sale_credits
+      FROM orders
+      WHERE (buyer_id = $1 OR seller_id = $1)
+        AND currency = 'TON';
+    `,
+    [userId],
+  );
+
+  return {
+    purchaseDebits: BigInt(result.rows[0]?.purchase_debits ?? "0"),
+    saleCredits: BigInt(result.rows[0]?.sale_credits ?? "0"),
+  };
+}
+
 function readToncenterComment(message) {
   const decoded = message?.message_content?.decoded;
 
@@ -424,11 +615,127 @@ function parseTelegramId(userId) {
 function normalizeUsername(username, userId) {
   const value = String(username ?? "").trim();
 
-  if (value) {
-    return value.startsWith("@") ? value : `@${value}`;
+  if (!value) {
+    return String(userId);
   }
 
-  return String(userId);
+  const cleanUsername = value.replace(/^@/, "");
+
+  if (/^[A-Za-z0-9_]{5,32}$/.test(cleanUsername)) {
+    return `@${cleanUsername}`;
+  }
+
+  return value;
+}
+
+function getShortOrderNumber(orderId) {
+  return String(orderId).slice(0, 8).toUpperCase();
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function getTelegramContactHtml(userId, username) {
+  const telegramId = parseTelegramId(userId);
+  const cleanUsername = String(username ?? "")
+    .trim()
+    .replace(/^@/, "");
+
+  if (/^[A-Za-z0-9_]{5,32}$/.test(cleanUsername)) {
+    return `<a href="https://t.me/${encodeURIComponent(cleanUsername)}">@${escapeHtml(cleanUsername)}</a>`;
+  }
+
+  if (telegramId) {
+    return `<a href="tg://user?id=${telegramId}">профиль</a>`;
+  }
+
+  return escapeHtml(username || userId);
+}
+
+async function sendTelegramMessage(chatId, text, options = {}) {
+  if (!TELEGRAM_BOT_TOKEN || !chatId) {
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `${TELEGRAM_API_URL}/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text,
+          parse_mode: options.parseMode,
+          disable_web_page_preview: true,
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`Telegram Bot API error: ${response.status} ${body}`);
+    }
+  } catch (error) {
+    console.error("Telegram message error:", error);
+  }
+}
+
+async function sendOrderPaidNotifications({
+  orderId,
+  buyerId,
+  sellerId,
+  buyerUsername,
+  sellerUsername,
+}) {
+  const shortOrderNumber = getShortOrderNumber(orderId);
+  const buyerChatId = parseTelegramId(buyerId);
+  const sellerChatId = parseTelegramId(sellerId);
+
+  await Promise.all([
+    sendTelegramMessage(
+      sellerChatId,
+      `Заказ ${shortOrderNumber} был оплачен, свяжитесь с ${buyerUsername} для выполнения заказа.`,
+    ),
+    sendTelegramMessage(
+      buyerChatId,
+      `Заказ был успешно оплачен. Свяжитесь с ${sellerUsername} для получения товара/услуги.`,
+    ),
+  ]);
+}
+
+async function sendOrderPaidNotificationsWithProfileLinks({
+  orderId,
+  buyerId,
+  sellerId,
+  buyerUsername,
+  sellerUsername,
+}) {
+  const shortOrderNumber = getShortOrderNumber(orderId);
+  const buyerChatId = parseTelegramId(buyerId);
+  const sellerChatId = parseTelegramId(sellerId);
+  const buyerContact = getTelegramContactHtml(buyerId, buyerUsername);
+  const sellerContact = getTelegramContactHtml(sellerId, sellerUsername);
+
+  await Promise.all([
+    sendTelegramMessage(
+      sellerChatId,
+      `Заказ ${shortOrderNumber} был оплачен, свяжитесь с ${buyerContact} для выполнения заказа.`,
+      { parseMode: "HTML" },
+    ),
+    sendTelegramMessage(
+      buyerChatId,
+      `Заказ был успешно оплачен. Свяжитесь с ${sellerContact} для получения товара/услуги.`,
+      { parseMode: "HTML" },
+    ),
+  ]);
 }
 
 function mapUser(row) {
@@ -481,10 +788,17 @@ function mapOrder(row) {
       id: row.seller_id,
       username: row.seller_username,
     },
+    buyer: {
+      id: row.buyer_id,
+      username: row.buyer_username ?? row.buyer_id,
+    },
   };
 }
 
-async function upsertUser({ id, telegram_id, username, avatar }) {
+async function upsertUser(
+  { id, telegram_id, username, avatar },
+  dbClient = pool,
+) {
   const userId = String(id ?? "").trim();
 
   if (!userId) {
@@ -494,7 +808,7 @@ async function upsertUser({ id, telegram_id, username, avatar }) {
   const telegramId = telegram_id ?? parseTelegramId(userId);
   const normalizedUsername = normalizeUsername(username, userId);
 
-  const result = await pool.query(
+  const result = await dbClient.query(
     `
       INSERT INTO users (id, telegram_id, username, avatar)
       VALUES ($1, $2, $3, $4)
@@ -524,7 +838,9 @@ async function syncDepositStatusesFromToncenter(pendingDeposits) {
   });
   const earliestCreatedAt = pendingDeposits.reduce((earliest, deposit) => {
     const createdAt = Date.parse(deposit.created_at);
-    return Number.isFinite(createdAt) ? Math.min(earliest, createdAt) : earliest;
+    return Number.isFinite(createdAt)
+      ? Math.min(earliest, createdAt)
+      : earliest;
   }, Date.now());
 
   if (Number.isFinite(earliestCreatedAt)) {
@@ -598,7 +914,7 @@ async function syncWithdrawalStatuses(userId) {
   );
 }
 
-async function getUserBalance(userId) {
+async function getUserBalance(userId, dbClient = pool) {
   const userDepositIds = [...deposits.values()]
     .filter((deposit) => deposit.user_id === userId)
     .map((deposit) => deposit.id);
@@ -609,10 +925,17 @@ async function getUserBalance(userId) {
   const confirmedDeposits = getConfirmedDepositTotal(userId);
   const reservedWithdrawals = getReservedWithdrawalTotal(userId);
   const processedWithdrawals = getProcessedWithdrawalTotal(userId);
-  const availableNano = confirmedDeposits - reservedWithdrawals;
+  const orderTotals = await getOrderAccountingTotals(userId, dbClient);
+  const availableNano =
+    confirmedDeposits +
+    orderTotals.saleCredits -
+    orderTotals.purchaseDebits -
+    reservedWithdrawals;
 
   return {
     confirmedDeposits,
+    purchaseDebits: orderTotals.purchaseDebits,
+    saleCredits: orderTotals.saleCredits,
     reservedWithdrawals,
     processedWithdrawals,
     availableNano: availableNano > 0n ? availableNano : 0n,
@@ -812,6 +1135,8 @@ app.get("/api/deposit/balance", async (req, res) => {
       balance: balance.availableNano.toString(),
       amount: Number(balance.availableNano) / 1_000_000_000,
       confirmed_deposits: balance.confirmedDeposits.toString(),
+      purchase_debits: balance.purchaseDebits.toString(),
+      sale_credits: balance.saleCredits.toString(),
       reserved_withdrawals: balance.reservedWithdrawals.toString(),
       processed_withdrawals: balance.processedWithdrawals.toString(),
       currency: "TON",

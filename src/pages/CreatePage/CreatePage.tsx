@@ -17,16 +17,26 @@ const AVAILABLE_FEATURES = [
 const CreatePage: React.FC<CreatePageProps> = ({ currentUser, onCreate }) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [price, setPrice] = useState<number | "">("");
-  const [currency, setCurrency] = useState<"TON" | "USDT">("TON");
+  const [price, setPrice] = useState("");
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [imageUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const normalizedPrice = price.replace(",", ".");
+  const parsedPrice = Number(normalizedPrice);
+  const isPriceFormatValid =
+    normalizedPrice === "" || /^\d*\.?\d{0,9}$/.test(normalizedPrice);
+  const isPricePositive =
+    isPriceFormatValid &&
+    normalizedPrice !== "" &&
+    normalizedPrice !== "." &&
+    Number.isFinite(parsedPrice) &&
+    parsedPrice > 0;
+
   const canSubmit = useMemo(() => {
-    return title.trim().length > 0 && price !== "" && Number(price) >= 0;
-  }, [title, price]);
+    return title.trim().length > 0 && isPricePositive;
+  }, [isPricePositive, title]);
 
   const toggleFeature = (feature: string) => {
     setSelectedFeatures((prev) =>
@@ -36,8 +46,22 @@ const CreatePage: React.FC<CreatePageProps> = ({ currentUser, onCreate }) => {
     );
   };
 
+  const handlePriceChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value.replace(",", ".");
+
+    if (value === "" || /^\d*\.?\d{0,9}$/.test(value)) {
+      setPrice(value);
+      setError(null);
+    }
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+
+    if (!isPricePositive) {
+      setError("Недопустимая цена объявления");
+      return;
+    }
 
     if (!canSubmit || isSubmitting) {
       return;
@@ -47,8 +71,8 @@ const CreatePage: React.FC<CreatePageProps> = ({ currentUser, onCreate }) => {
       id: crypto.randomUUID(),
       title: title.trim(),
       description: description.trim(),
-      price: Number(price),
-      currency,
+      price: parsedPrice,
+      currency: "TON",
       features: selectedFeatures,
       seller: currentUser || {
         id: "me",
@@ -130,30 +154,13 @@ const CreatePage: React.FC<CreatePageProps> = ({ currentUser, onCreate }) => {
               placeholder="0.00"
               inputMode="decimal"
               value={price}
-              onChange={(event) =>
-                setPrice(event.target.value === "" ? "" : Number(event.target.value))
-              }
+              onChange={handlePriceChange}
             />
           </div>
 
           <div className="form-group">
             <label className="label">Валюта</label>
-            <div className="currency-toggle">
-              <button
-                type="button"
-                className={`currency-btn ${currency === "TON" ? "active" : ""}`}
-                onClick={() => setCurrency("TON")}
-              >
-                TON
-              </button>
-              <button
-                type="button"
-                className={`currency-btn ${currency === "USDT" ? "active" : ""}`}
-                onClick={() => setCurrency("USDT")}
-              >
-                USDT
-              </button>
-            </div>
+            <div className="currency-static">TON</div>
           </div>
         </div>
 
@@ -163,7 +170,7 @@ const CreatePage: React.FC<CreatePageProps> = ({ currentUser, onCreate }) => {
           <button
             className="submit-btn"
             type="submit"
-            disabled={!canSubmit || isSubmitting}
+            disabled={isSubmitting}
           >
             {isSubmitting ? "Создание..." : "Создать"}
           </button>

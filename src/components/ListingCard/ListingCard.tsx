@@ -5,10 +5,15 @@ import tonSymbol2 from '../../assets/icons/ton_symbol_2.svg';
 
 interface ListingCardProps {
   listing: Listing;
-  onPurchase: (listingId: string) => void;
+  onPurchase: (listingId: string) => Promise<void> | void;
+  isPurchasing?: boolean;
 }
 
-const ListingCard: React.FC<ListingCardProps> = ({ listing, onPurchase }) => {
+const ListingCard: React.FC<ListingCardProps> = ({
+  listing,
+  onPurchase,
+  isPurchasing = false,
+}) => {
   return (
     <div className="listing-card">
       <div className="listing-content">
@@ -47,9 +52,11 @@ const ListingCard: React.FC<ListingCardProps> = ({ listing, onPurchase }) => {
         <button 
           className="purchase-button"
           onClick={() => onPurchase(listing.id)}
+          disabled={isPurchasing}
         >
           <span className="price">{listing.price}</span>
           <img src={tonSymbol2} alt="TON" className="currency-img" />
+          {isPurchasing && <span className="purchase-state">...</span>}
         </button>
       </div>
     </div>

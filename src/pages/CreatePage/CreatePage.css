@@ -61,23 +61,16 @@
   gap: 12px;
 }
 
-.currency-toggle {
-  display: inline-flex;
+.currency-static {
+  display: flex;
+  align-items: center;
+  min-height: 41px;
   background: #141a22;
   border: 1px solid #2a2f36;
-  border-radius: 12px;
-  padding: 4px;
-}
-
-.currency-btn {
-  padding: 8px 12px;
+  border-radius: 10px;
   color: #ffffff;
-  border-radius: 8px;
-}
-
-.currency-btn.active {
-  background: #1e3a5f;
-  color: #2196F3;
+  padding: 10px 12px;
+  font-weight: 700;
 }
 
 .actions {

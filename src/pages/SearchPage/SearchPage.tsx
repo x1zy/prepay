@@ -5,12 +5,17 @@ import './SearchPage.css';
 
 interface SearchPageProps {
   listings: Listing[];
-  onPurchase: (listingId: string) => void;
+  onPurchase: (listingId: string) => Promise<void> | void;
+  purchasingListingId?: string | null;
 }
 
 const AVAILABLE_FEATURES = ['Полный доступ', 'Без VPN', 'Новый', 'Автовыдача'];
 
-const SearchPage: React.FC<SearchPageProps> = ({ listings, onPurchase }) => {
+const SearchPage: React.FC<SearchPageProps> = ({
+  listings,
+  onPurchase,
+  purchasingListingId,
+}) => {
   const [query, setQuery] = useState('');
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
 
@@ -60,7 +65,12 @@ const SearchPage: React.FC<SearchPageProps> = ({ listings, onPurchase }) => {
 
       <div className="results">
         {filtered.map(listing => (
-          <ListingCard key={listing.id} listing={listing} onPurchase={onPurchase} />)
+          <ListingCard
+            key={listing.id}
+            listing={listing}
+            onPurchase={onPurchase}
+            isPurchasing={purchasingListingId === listing.id}
+          />)
         )}
         {filtered.length === 0 && (
           <div className="empty">Ничего не найдено</div>
